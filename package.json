@@ -1,0 +1,13 @@
+{
+  "name": "poster-template-editor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server/static.js",
+    "serve": "node server/static.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
