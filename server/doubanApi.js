@@ -1,5 +1,6 @@
 import {
   fetchDoubanTopic,
+  fetchDoubanGroupsBatch,
   isAllowedDoubanImageUrl,
 } from './doubanParser.js';
 
@@ -30,6 +31,20 @@ export function createDoubanApiMiddleware() {
     }
 
     try {
+      if (req.method === 'POST' && req.url === '/api/douban/groups/batch') {
+        const body = await readJsonBody(req);
+        const urls = Array.isArray(body.urls) ? body.urls : [];
+
+        if (!urls.length) {
+          sendJson(res, 400, { error: '请提供至少一个小组链接' });
+          return;
+        }
+
+        const data = await fetchDoubanGroupsBatch(urls);
+        sendJson(res, 200, data);
+        return;
+      }
+
       if (req.method === 'POST' && req.url === '/api/douban/fetch') {
         const body = await readJsonBody(req);
         const url = body.url?.trim();
