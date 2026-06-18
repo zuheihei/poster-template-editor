@@ -187,8 +187,9 @@
     <div class="export-layer" id="exportLayer"></div>
   </div>
 
-  <!-- 导出库（同源加载，避免 CDN 被墙导致导出失败） -->
+  <!-- 导出库：优先同源 vendor，失败则回退 CDN（PNG 曾可用说明 CDN 在你网络下通常可达） -->
   <script src="/vendor/html-to-image.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
   <script>
 (function () {
   'use strict';
@@ -432,7 +433,7 @@
 
   function assertExportReady() {
     if (typeof htmlToImage === 'undefined') {
-      throw new Error('导出组件未加载，请刷新页面后重试');
+      throw new Error('导出组件未加载，请刷新页面；若仍失败，请确认已上传 vendor/html-to-image.js');
     }
   }
 
