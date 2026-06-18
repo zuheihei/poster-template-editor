@@ -11,7 +11,12 @@
       background: #f0f2f5;
       color: #333;
     }
-    .app { display: flex; min-height: 100vh; }
+    .app {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
     .export-layer {
       position: fixed; left: -99999px; top: 0;
       pointer-events: none; z-index: -1;
@@ -19,11 +24,26 @@
 
     /* Editor Panel */
     .editor-panel {
-      width: 320px; flex-shrink: 0; background: #fff;
+      width: 340px; flex-shrink: 0; background: #fff;
       border-right: 1px solid #e8e8e8; padding: 24px 20px;
       height: 100vh; overflow-y: auto; position: sticky; top: 0;
     }
-    .editor-title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 24px; }
+    .editor-title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; }
+    .editor-tabs {
+      display: flex; gap: 6px; margin-bottom: 20px;
+      padding: 4px; background: #f3f3f3; border-radius: 10px;
+    }
+    .editor-tab {
+      flex: 1; padding: 9px 8px; border: none; border-radius: 8px;
+      background: transparent; font-size: 13px; font-weight: 500; color: #666;
+      cursor: pointer; font-family: inherit; line-height: 1.3;
+    }
+    .editor-tab:hover { color: #333; }
+    .editor-tab.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .preview-panel { display: none; }
+    .preview-panel.active { display: block; min-height: 100%; }
     .form-group { margin-bottom: 18px; }
     .form-group label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 8px; }
     .form-group input[type='text'] {
@@ -48,12 +68,6 @@
       color: #555; cursor: pointer;
     }
     .upload-btn:hover { background: #eee; }
-    .style-note {
-      margin-top: 28px; padding: 14px; background: #faf9f7;
-      border-radius: 8px; font-size: 12px; color: #666; line-height: 1.6;
-    }
-    .style-note-title { font-weight: 600; color: #444; margin-bottom: 6px; }
-    .style-note ul { margin: 8px 0 8px 18px; }
     .export-section { margin-top: 28px; padding-top: 20px; border-top: 1px solid #eee; }
     .export-title { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 12px; }
     .export-format-group { margin-bottom: 14px; }
@@ -74,7 +88,13 @@
     .export-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     /* Preview */
-    .preview-area { flex: 1; padding: 32px 24px 48px; overflow: auto; min-width: 0; }
+    .preview-area {
+      flex: 1;
+      min-width: 0;
+      min-height: 100vh;
+      padding: 32px 24px 48px;
+      overflow: auto;
+    }
     .preview-heading { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
     .preview-hint { font-size: 13px; color: #888; margin-bottom: 28px; }
     .preview-grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
@@ -113,6 +133,27 @@
       display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
     }
     .poster-headline-text { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+    .panel-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+    .panel-section-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 14px; }
+    .form-group textarea {
+      width: 100%; min-height: 110px; padding: 9px 12px; border: 1px solid #e0e0e0;
+      border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; resize: vertical;
+    }
+    .form-group textarea:focus { border-color: #888580; }
+    .color-row { display: flex; gap: 10px; align-items: center; }
+    .color-row input[type='color'] { width: 42px; height: 36px; padding: 2px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
+    .color-row input[type='text'] { flex: 1; min-width: 0; }
+    .secondary-btn {
+      display: inline-block; margin-top: 8px; padding: 8px 12px; border: 1px solid #ddd;
+      border-radius: 8px; background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    .secondary-btn:hover { background: #f5f5f5; }
+    .group-count { margin-top: 8px; font-size: 12px; color: #666; }
+    .preview-section-title {
+      width: 100%; font-size: 14px; font-weight: 600; color: #555;
+      margin: 8px 0 16px; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +161,12 @@
     <aside class="editor-panel">
       <h2 class="editor-title">图文模板编辑器</h2>
 
+      <div class="editor-tabs" role="tablist">
+        <button type="button" class="editor-tab active" data-tab="group" role="tab" aria-selected="true">豆瓣小组推荐</button>
+        <button type="button" class="editor-tab" data-tab="topic" role="tab" aria-selected="false">豆瓣专题推荐</button>
+      </div>
+
+      <div class="tab-panel active" data-tab-panel="group" role="tabpanel">
       <div class="form-group">
         <label for="doubanUrl">豆瓣小组帖链接</label>
         <div class="fetch-row">
@@ -151,38 +198,85 @@
         <label class="upload-btn">上传头像<input type="file" id="avatarUpload" accept="image/*" hidden></label>
       </div>
 
-      <div class="style-note">
-        <p class="style-note-title">Figma 模板说明</p>
-        <p>海报 A（1242×2110）Figma 原尺寸</p>
-        <ul>
-          <li>头图 1080×1080，圆角 25px</li>
-          <li>色值 #725940 / 背景 #F7F7F7</li>
-        </ul>
-        <p>海报 B（1242×1863）</p>
-        <p>修改一次，两种尺寸同步更新。</p>
-      </div>
-
       <div class="export-section">
         <p class="export-title">导出图片</p>
         <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
         <div class="form-group export-format-group">
           <label>导出格式</label>
-          <div class="export-format-options" id="formatOptions">
+          <div class="export-format-options" id="formatOptionsGroup">
             <button type="button" class="export-format-btn" data-format="png">PNG</button>
             <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
             <button type="button" class="export-format-btn" data-format="gif">GIF</button>
           </div>
         </div>
-        <button type="button" class="export-btn" id="exportA">导出海报 A</button>
-        <button type="button" class="export-btn" id="exportB">导出海报 B</button>
-        <button type="button" class="export-btn primary" id="exportAll">一键导出全部</button>
+        <button type="button" class="export-btn" id="exportA">导出（1242×2110）</button>
+        <button type="button" class="export-btn" id="exportB">导出（1242×1863）</button>
+        <button type="button" class="export-btn primary" id="exportAllGroup">一键导出</button>
+        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+      </div>
+      </div>
+
+      <div class="tab-panel" data-tab-panel="topic" role="tabpanel">
+        <div class="form-group">
+          <label for="topicTitle">专题标题</label>
+          <input id="topicTitle" type="text" placeholder="对方向你发送一只萌物">
+        </div>
+        <div class="form-group">
+          <label>专题头图</label>
+          <label class="upload-btn">上传头图<input type="file" id="topicHeroUpload" accept="image/*" hidden></label>
+        </div>
+        <div class="form-group">
+          <label>蒙层渐变色</label>
+          <div class="color-row" style="margin-bottom:8px">
+            <input type="color" id="gradientStartPick" value="#708FC1">
+            <input id="gradientStart" type="text" value="#708FC1" placeholder="起点色">
+          </div>
+          <div class="color-row">
+            <input type="color" id="gradientEndPick" value="#354659">
+            <input id="gradientEnd" type="text" value="#354659" placeholder="终点色">
+          </div>
+          <button type="button" class="secondary-btn" id="sampleGradientBtn">从图片取色</button>
+        </div>
+        <div class="form-group">
+          <label for="topicGroupUrls">关联小组链接（每行一个，1～5 个）</label>
+          <textarea id="topicGroupUrls" placeholder="https://www.douban.com/group/123456/"></textarea>
+          <div class="fetch-row" style="margin-top:8px">
+            <button type="button" class="fetch-btn" id="fetchTopicGroupsBtn" style="flex:1">抓取小组</button>
+          </div>
+          <p class="fetch-error" id="topicFetchError" hidden></p>
+          <p class="group-count" id="topicGroupCount">已加载 0 个小组</p>
+        </div>
+
+        <div class="export-section">
+        <p class="export-title">导出图片</p>
+        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
+        <div class="form-group export-format-group">
+          <label>导出格式</label>
+          <div class="export-format-options" id="formatOptionsTopic">
+            <button type="button" class="export-format-btn" data-format="png">PNG</button>
+            <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
+            <button type="button" class="export-format-btn" data-format="gif">GIF</button>
+          </div>
+        </div>
+        <button type="button" class="export-btn" id="exportC">导出（1242×2110）</button>
+        <button type="button" class="export-btn" id="exportD">导出（1242×1863）</button>
+        <button type="button" class="export-btn primary" id="exportAllTopic">一键导出</button>
+        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+        </div>
       </div>
     </aside>
 
     <section class="preview-area">
-      <h2 class="preview-heading">实时预览</h2>
-      <p class="preview-hint">基于 Figma 精确还原，共享同一份数据</p>
-      <div class="preview-grid" id="previewGrid"></div>
+      <div class="preview-panel active" data-preview-panel="group">
+        <h2 class="preview-heading">豆瓣小组推荐</h2>
+        <p class="preview-hint">小组实时预览，基于 Figma 精确还原</p>
+        <div class="preview-grid" id="previewGridGroup"></div>
+      </div>
+      <div class="preview-panel" data-preview-panel="topic">
+        <h2 class="preview-heading">豆瓣专题推荐</h2>
+        <p class="preview-hint">专题实时预览，基于 Figma 精确还原</p>
+        <div class="preview-grid" id="previewGridTopic"></div>
+      </div>
     </section>
 
     <div class="export-layer" id="exportLayer"></div>
@@ -191,6 +285,7 @@
   <!-- 导出库：优先同源 vendor，失败则回退 CDN（PNG 曾可用说明 CDN 在你网络下通常可达） -->
   <script src="/vendor/html-to-image.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+  <script src="/topic-poster.js"></script>
   <script>
 (function () {
   'use strict';
@@ -206,6 +301,7 @@
   var GIF_SCALES = [1, 0.72, 0.58, 0.48];
   var GIF_PALETTE_SIZES = [256, 128, 64, 32];
   var exportFormat = 'jpg';
+  var activeTab = 'group';
   var exporting = false;
 
   var svgHero = '<svg xmlns="http://www.w3.org/2000/svg" width="1141" height="1128" viewBox="0 0 1141 1128">' +
@@ -249,8 +345,8 @@
   };
 
   var POSTER_SIZES = {
-    a: { width: 1242, height: 2110, exportName: 'poster-a-1242x2110', label: '海报 A（1242×2110）', scale: 0.28 },
-    b: { width: 1242, height: 1863, exportName: 'poster-b-1242x1863', label: '海报 B（1242×1863）', scale: 0.28 }
+    a: { width: 1242, height: 2110, exportName: 'group-1242x2110', label: '小组（1242×2110）', scale: 0.28 },
+    b: { width: 1242, height: 1863, exportName: 'group-1242x1863', label: '小组（1242×1863）', scale: 0.28 }
   };
 
   var state = {
@@ -259,6 +355,22 @@
     headline: '小钱买爽，才是真理财',
     heroImage: PLACEHOLDER_HERO,
     avatar: PLACEHOLDER_AVATAR
+  };
+
+  function makePlaceholderGroups(count) {
+    var groups = [];
+    for (var i = 0; i < count; i++) {
+      groups.push({ name: '小组名称 ' + (i + 1), avatar: PLACEHOLDER_AVATAR });
+    }
+    return groups;
+  }
+
+  var topicState = {
+    title: '对方向你发送一只萌物',
+    heroImage: PLACEHOLDER_HERO,
+    gradientStart: TopicPoster.DEFAULT_GRADIENT.start,
+    gradientEnd: TopicPoster.DEFAULT_GRADIENT.end,
+    groups: makePlaceholderGroups(3)
   };
 
   function figmaLayoutNative(d) {
@@ -364,14 +476,15 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  var exportNodes = { a: null, b: null };
+  var exportNodes = { a: null, b: null, c: null, d: null };
 
-  function render() {
-    var grid = document.getElementById('previewGrid');
-    var layer = document.getElementById('exportLayer');
+  function updateTopicGroupCount() {
+    var el = document.getElementById('topicGroupCount');
+    if (el) el.textContent = '已加载 ' + topicState.groups.length + ' 个小组';
+  }
+
+  function renderGroupPreview(grid) {
     grid.innerHTML = '';
-    layer.innerHTML = '';
-
     ['a', 'b'].forEach(function (key) {
       var cfg = POSTER_SIZES[key];
       var layout = layouts[key];
@@ -387,9 +500,58 @@
       item.appendChild(scaler);
       grid.appendChild(item);
 
-      var exportPoster = buildPoster(layout, state, bg);
-      exportNodes[key] = exportPoster;
-      layer.appendChild(exportPoster);
+      exportNodes[key] = buildPoster(layout, state, bg);
+    });
+  }
+
+  function renderTopicPreview(grid) {
+    grid.innerHTML = '';
+    ['c', 'd'].forEach(function (key) {
+      var cfg = TopicPoster.TOPIC_SIZES[key];
+      var scale = cfg.scale;
+      var item = el('div', 'preview-item');
+      item.appendChild(el('p', 'preview-label', null, cfg.label));
+      var scaler = el('div', 'preview-scaler', { width: cfg.width * scale + 'px', height: cfg.height * scale + 'px' });
+      var inner = el('div', 'preview-inner', { transform: 'scale(' + scale + ')', width: cfg.width + 'px', height: cfg.height + 'px' });
+      inner.appendChild(TopicPoster.buildTopicPoster(key, topicState));
+      scaler.appendChild(inner);
+      item.appendChild(scaler);
+      grid.appendChild(item);
+
+      exportNodes[key] = TopicPoster.buildTopicPoster(key, topicState);
+    });
+  }
+
+  function render() {
+    var layer = document.getElementById('exportLayer');
+    layer.innerHTML = '';
+    renderGroupPreview(document.getElementById('previewGridGroup'));
+    renderTopicPreview(document.getElementById('previewGridTopic'));
+    ['a', 'b', 'c', 'd'].forEach(function (key) {
+      if (exportNodes[key]) layer.appendChild(exportNodes[key]);
+    });
+    updateTopicGroupCount();
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.editor-tab').forEach(function (btn) {
+      var isActive = btn.dataset.tab === tab;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-tab-panel]').forEach(function (panel) {
+      panel.classList.toggle('active', panel.dataset.tabPanel === tab);
+    });
+    document.querySelectorAll('[data-preview-panel]').forEach(function (panel) {
+      panel.classList.toggle('active', panel.dataset.previewPanel === tab);
+    });
+  }
+
+  function syncExportFormat(format) {
+    exportFormat = format;
+    document.querySelectorAll('.export-format-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.format === format);
     });
   }
 
@@ -397,6 +559,15 @@
     document.getElementById('groupName').value = state.groupName;
     document.getElementById('members').value = state.members;
     document.getElementById('headline').value = state.headline;
+  }
+
+  function syncTopicInputs() {
+    document.getElementById('topicTitle').value = topicState.title;
+    document.getElementById('gradientStart').value = topicState.gradientStart;
+    document.getElementById('gradientEnd').value = topicState.gradientEnd;
+    document.getElementById('gradientStartPick').value = topicState.gradientStart;
+    document.getElementById('gradientEndPick').value = topicState.gradientEnd;
+    updateTopicGroupCount();
   }
 
   function getCaptureOptions(width, height) {
@@ -580,10 +751,97 @@
   }
 
   function downloadDataUrl(dataUrl, filename) {
-    var link = document.createElement('a');
-    link.download = filename;
-    link.href = dataUrl;
-    link.click();
+    return new Promise(function (resolve) {
+      var link = document.createElement('a');
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      var cleanup = function (href) {
+        if (href && href.indexOf('blob:') === 0) URL.revokeObjectURL(href);
+        if (link.parentNode) link.parentNode.removeChild(link);
+        resolve();
+      };
+      if (String(dataUrl).indexOf('data:') === 0) {
+        fetch(dataUrl).then(function (res) { return res.blob(); }).then(function (blob) {
+          var href = URL.createObjectURL(blob);
+          link.href = href;
+          link.click();
+          setTimeout(function () { cleanup(href); }, 600);
+        }).catch(function () {
+          link.href = dataUrl;
+          link.click();
+          setTimeout(cleanup, 600);
+        });
+        return;
+      }
+      link.href = dataUrl;
+      link.click();
+      setTimeout(cleanup, 600);
+    });
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    return new Promise(function (resolve, reject) {
+      try {
+        var parts = String(dataUrl).split(',');
+        var mimeMatch = parts[0].match(/:(.*?);/);
+        var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        var binary = atob(parts[1] || '');
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        resolve(new Blob([bytes], { type: mime }));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function pickExportDirectory() {
+    if (typeof window.showDirectoryPicker !== 'function') return Promise.resolve(null);
+    return window.showDirectoryPicker({ mode: 'readwrite' }).catch(function () { return null; });
+  }
+
+  function writeResultsToDirectory(dirHandle, results, requestedFormat) {
+    return results.reduce(function (chain, item) {
+      return chain.then(function () {
+        var dataUrl = item.result.dataUrl || item.result;
+        var fmt = item.result.format || requestedFormat;
+        var filename = resolveFilename(item.cfg.exportName, fmt);
+        return dataUrlToBlob(dataUrl).then(function (blob) {
+          return dirHandle.getFileHandle(filename, { create: true }).then(function (fileHandle) {
+            return fileHandle.createWritable().then(function (writable) {
+              return writable.write(blob).then(function () { return writable.close(); });
+            });
+          });
+        });
+      });
+    }, Promise.resolve());
+  }
+
+  function downloadFilesSequentially(results, requestedFormat) {
+    return results.reduce(function (chain, item) {
+      return chain
+        .then(function () {
+          return downloadExportResult(item.result, item.cfg.exportName, requestedFormat);
+        })
+        .then(function () {
+          return new Promise(function (resolve) { setTimeout(resolve, 1000); });
+        });
+    }, Promise.resolve());
+  }
+
+  function saveExportResults(results, requestedFormat, dirHandle) {
+    if (dirHandle) return writeResultsToDirectory(dirHandle, results, requestedFormat);
+    return downloadFilesSequentially(results, requestedFormat);
+  }
+
+  function resetExportState() {
+    exporting = false;
+    setExportDisabled(false);
+    var fetchBtn = document.getElementById('fetchBtn');
+    var fetchTopicBtn = document.getElementById('fetchTopicGroupsBtn');
+    if (fetchBtn) fetchBtn.disabled = false;
+    if (fetchTopicBtn) fetchTopicBtn.disabled = false;
   }
 
   function resolveFilename(name, format) {
@@ -644,44 +902,74 @@
     var fmt = result.format || requestedFormat;
     if (result.note) console.info(result.note);
     console.info('导出完成：' + fmt.toUpperCase() + '，约 ' + Math.round(getDataUrlByteSize(dataUrl) / 1024) + ' KB');
-    downloadDataUrl(dataUrl, resolveFilename(exportName, fmt));
+    return downloadDataUrl(dataUrl, resolveFilename(exportName, fmt));
   }
 
   function exportPoster(key) {
     if (exporting) return;
     var node = exportNodes[key];
-    var cfg = POSTER_SIZES[key];
-    if (!node) return;
+    var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+    if (!node || !cfg) return;
+    if ((key === 'c' || key === 'd') && topicState.groups.length < TopicPoster.MIN_GROUPS) {
+      alert('专题海报至少需要 ' + TopicPoster.MIN_GROUPS + ' 个小组');
+      return;
+    }
+    if ((key === 'c' || key === 'd') && topicState.groups.length > TopicPoster.MAX_GROUPS) {
+      alert('专题海报最多 ' + TopicPoster.MAX_GROUPS + ' 个小组');
+      return;
+    }
     exporting = true;
     setExportDisabled(true);
     prepareAndExport(node, cfg.width, cfg.height, exportFormat)
       .then(function (result) { downloadExportResult(result, cfg.exportName, exportFormat); })
       .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
-      .finally(function () { exporting = false; setExportDisabled(false); });
+      .finally(function () { resetExportState(); });
   }
 
-  function exportAll() {
+  function exportAllKeys(keys) {
     if (exporting) return;
+    var validKeys = keys.filter(function (key) {
+      if ((key === 'c' || key === 'd') && topicState.groups.length < TopicPoster.MIN_GROUPS) return false;
+      var node = exportNodes[key];
+      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+      return !!(node && cfg);
+    });
+    if (!validKeys.length) {
+      if ((keys.indexOf('c') !== -1 || keys.indexOf('d') !== -1) && topicState.groups.length < TopicPoster.MIN_GROUPS) {
+        alert('专题海报至少需要 ' + TopicPoster.MIN_GROUPS + ' 个小组');
+      }
+      return;
+    }
     exporting = true;
     setExportDisabled(true);
-    var keys = ['a', 'b'];
-    var chain = Promise.resolve();
-    keys.forEach(function (key) {
-      chain = chain.then(function () {
-        var node = exportNodes[key];
-        var cfg = POSTER_SIZES[key];
-        return prepareAndExport(node, cfg.width, cfg.height, exportFormat)
-          .then(function (result) { downloadExportResult(result, cfg.exportName, exportFormat); })
-          .then(function () { return new Promise(function (r) { setTimeout(r, 400); }); });
+    var safetyTimer = setTimeout(function () {
+      alert('导出耗时较长，已恢复按钮，请重试');
+      resetExportState();
+    }, 90000);
+
+    pickExportDirectory()
+      .then(function (dirHandle) {
+        return Promise.all(validKeys.map(function (key) {
+          var node = exportNodes[key];
+          var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+          return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
+            return { cfg: cfg, result: result };
+          });
+        })).then(function (results) {
+          return saveExportResults(results, exportFormat, dirHandle);
+        });
+      })
+      .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
+      .finally(function () {
+        clearTimeout(safetyTimer);
+        resetExportState();
       });
-    });
-    chain.catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
-      .finally(function () { exporting = false; setExportDisabled(false); });
   }
 
   function setExportDisabled(disabled) {
-    ['exportA','exportB','exportAll','fetchBtn'].forEach(function (id) {
-      document.getElementById(id).disabled = disabled;
+    ['exportA','exportB','exportC','exportD','exportAllGroup','exportAllTopic'].forEach(function (id) {
+      var node = document.getElementById(id);
+      if (node) node.disabled = disabled;
     });
     document.querySelectorAll('.export-format-btn').forEach(function (btn) {
       btn.disabled = disabled;
@@ -734,6 +1022,37 @@
     });
   }
 
+  function fetchDoubanGroups(urlText) {
+    var urls = String(urlText).split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+    if (urls.length < TopicPoster.MIN_GROUPS) {
+      return Promise.reject(new Error('请至少提供 ' + TopicPoster.MIN_GROUPS + ' 个小组链接'));
+    }
+    if (urls.length > TopicPoster.MAX_GROUPS) {
+      return Promise.reject(new Error('最多提供 ' + TopicPoster.MAX_GROUPS + ' 个小组链接'));
+    }
+    return fetch('/api/douban/groups/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls: urls })
+    }).then(function (res) {
+      return res.json().then(function (payload) {
+        if (!res.ok) throw new Error(payload.error || '抓取失败');
+        return payload;
+      });
+    }).then(function (payload) {
+      if (!payload.groups || !payload.groups.length) {
+        throw new Error('未能抓取到任何小组');
+      }
+      return Promise.all(payload.groups.map(function (group) {
+        return loadImageAsDataUrl(group.avatar).then(function (avatar) {
+          return { id: group.id, name: group.name, avatar: avatar || group.avatar };
+        });
+      })).then(function (groups) {
+        return { groups: groups, errors: payload.errors || [] };
+      });
+    });
+  }
+
   /* ── 事件绑定 ── */
   document.getElementById('groupName').addEventListener('input', function (e) {
     state.groupName = e.target.value; render();
@@ -751,6 +1070,55 @@
   document.getElementById('avatarUpload').addEventListener('change', function (e) {
     readFileAsDataUrl(e.target.files[0], function (url) { state.avatar = url; });
     e.target.value = '';
+  });
+  document.getElementById('topicTitle').addEventListener('input', function (e) {
+    topicState.title = e.target.value; render();
+  });
+  document.getElementById('topicHeroUpload').addEventListener('change', function (e) {
+    readFileAsDataUrl(e.target.files[0], function (url) { topicState.heroImage = url; });
+    e.target.value = '';
+  });
+  function bindGradientInput(textId, pickId, key) {
+    document.getElementById(textId).addEventListener('input', function (e) {
+      topicState[key] = e.target.value;
+      document.getElementById(pickId).value = e.target.value;
+      render();
+    });
+    document.getElementById(pickId).addEventListener('input', function (e) {
+      topicState[key] = e.target.value;
+      document.getElementById(textId).value = e.target.value;
+      render();
+    });
+  }
+  bindGradientInput('gradientStart', 'gradientStartPick', 'gradientStart');
+  bindGradientInput('gradientEnd', 'gradientEndPick', 'gradientEnd');
+  document.getElementById('sampleGradientBtn').addEventListener('click', function () {
+    TopicPoster.sampleGradientFromImage(topicState.heroImage).then(function (colors) {
+      topicState.gradientStart = colors.start;
+      topicState.gradientEnd = colors.end;
+      syncTopicInputs(); render();
+    }).catch(function () { alert('取色失败，请手动选择渐变色'); });
+  });
+  document.getElementById('fetchTopicGroupsBtn').addEventListener('click', function () {
+    var urls = document.getElementById('topicGroupUrls').value;
+    var errEl = document.getElementById('topicFetchError');
+    errEl.hidden = true;
+    document.getElementById('fetchTopicGroupsBtn').textContent = '抓取中…';
+    document.getElementById('fetchTopicGroupsBtn').disabled = true;
+    fetchDoubanGroups(urls).then(function (result) {
+      topicState.groups = result.groups;
+      if (result.errors.length) {
+        errEl.textContent = '部分链接失败：' + result.errors.map(function (e) { return e.error; }).join('；');
+        errEl.hidden = false;
+      }
+      render();
+    }).catch(function (e) {
+      errEl.textContent = e.message || '抓取失败';
+      errEl.hidden = false;
+    }).finally(function () {
+      document.getElementById('fetchTopicGroupsBtn').textContent = '抓取小组';
+      document.getElementById('fetchTopicGroupsBtn').disabled = false;
+    });
   });
   document.getElementById('fetchBtn').addEventListener('click', function () {
     var url = document.getElementById('doubanUrl').value.trim();
@@ -774,17 +1142,22 @@
       document.getElementById('fetchBtn').disabled = false;
     });
   });
+  document.querySelectorAll('.editor-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      switchTab(btn.dataset.tab);
+    });
+  });
   document.querySelectorAll('.export-format-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      exportFormat = btn.dataset.format;
-      document.querySelectorAll('.export-format-btn').forEach(function (b) {
-        b.classList.toggle('active', b === btn);
-      });
+      syncExportFormat(btn.dataset.format);
     });
   });
   document.getElementById('exportA').addEventListener('click', function () { exportPoster('a'); });
   document.getElementById('exportB').addEventListener('click', function () { exportPoster('b'); });
-  document.getElementById('exportAll').addEventListener('click', exportAll);
+  document.getElementById('exportC').addEventListener('click', function () { exportPoster('c'); });
+  document.getElementById('exportD').addEventListener('click', function () { exportPoster('d'); });
+  document.getElementById('exportAllGroup').addEventListener('click', function () { exportAllKeys(['a', 'b']); });
+  document.getElementById('exportAllTopic').addEventListener('click', function () { exportAllKeys(['c', 'd']); });
 
   (function updateFetchHint() {
     var hint = document.getElementById('fetchHint');
@@ -797,6 +1170,9 @@
   })();
 
   syncInputs();
+  syncTopicInputs();
+  resetExportState();
+  switchTab('group');
   render();
 })();
   </script>
