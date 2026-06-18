@@ -212,7 +212,7 @@
         <button type="button" class="export-btn" id="exportA">导出（1242×2110）</button>
         <button type="button" class="export-btn" id="exportB">导出（1242×1863）</button>
         <button type="button" class="export-btn primary" id="exportAllGroup">一键导出</button>
-        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+        <p class="fetch-hint" style="margin-top:6px">两张图片将依次保存到「下载」文件夹</p>
       </div>
       </div>
 
@@ -261,7 +261,7 @@
         <button type="button" class="export-btn" id="exportC">导出（1242×2110）</button>
         <button type="button" class="export-btn" id="exportD">导出（1242×1863）</button>
         <button type="button" class="export-btn primary" id="exportAllTopic">一键导出</button>
-        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+        <p class="fetch-hint" style="margin-top:6px">两张图片将依次保存到「下载」文件夹</p>
         </div>
       </div>
     </aside>
@@ -780,44 +780,6 @@
     });
   }
 
-  function dataUrlToBlob(dataUrl) {
-    return new Promise(function (resolve, reject) {
-      try {
-        var parts = String(dataUrl).split(',');
-        var mimeMatch = parts[0].match(/:(.*?);/);
-        var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-        var binary = atob(parts[1] || '');
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        resolve(new Blob([bytes], { type: mime }));
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  function pickExportDirectory() {
-    if (typeof window.showDirectoryPicker !== 'function') return Promise.resolve(null);
-    return window.showDirectoryPicker({ mode: 'readwrite' }).catch(function () { return null; });
-  }
-
-  function writeResultsToDirectory(dirHandle, results, requestedFormat) {
-    return results.reduce(function (chain, item) {
-      return chain.then(function () {
-        var dataUrl = item.result.dataUrl || item.result;
-        var fmt = item.result.format || requestedFormat;
-        var filename = resolveFilename(item.cfg.exportName, fmt);
-        return dataUrlToBlob(dataUrl).then(function (blob) {
-          return dirHandle.getFileHandle(filename, { create: true }).then(function (fileHandle) {
-            return fileHandle.createWritable().then(function (writable) {
-              return writable.write(blob).then(function () { return writable.close(); });
-            });
-          });
-        });
-      });
-    }, Promise.resolve());
-  }
-
   function downloadFilesSequentially(results, requestedFormat) {
     return results.reduce(function (chain, item) {
       return chain
@@ -825,14 +787,9 @@
           return downloadExportResult(item.result, item.cfg.exportName, requestedFormat);
         })
         .then(function () {
-          return new Promise(function (resolve) { setTimeout(resolve, 1000); });
+          return new Promise(function (resolve) { setTimeout(resolve, 1200); });
         });
     }, Promise.resolve());
-  }
-
-  function saveExportResults(results, requestedFormat, dirHandle) {
-    if (dirHandle) return writeResultsToDirectory(dirHandle, results, requestedFormat);
-    return downloadFilesSequentially(results, requestedFormat);
   }
 
   function resetExportState() {
@@ -947,17 +904,18 @@
       resetExportState();
     }, 90000);
 
-    pickExportDirectory()
-      .then(function (dirHandle) {
-        return Promise.all(validKeys.map(function (key) {
-          var node = exportNodes[key];
-          var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
-          return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
-            return { cfg: cfg, result: result };
-          });
-        })).then(function (results) {
-          return saveExportResults(results, exportFormat, dirHandle);
-        });
+    Promise.all(validKeys.map(function (key) {
+      var node = exportNodes[key];
+      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+      return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
+        return { cfg: cfg, result: result };
+      });
+    }))
+      .then(function (results) { return downloadFilesSequentially(results, exportFormat); })
+      .then(function () {
+        if (validKeys.length > 1) {
+          alert('已导出 ' + validKeys.length + ' 张图片，请查看「下载」文件夹');
+        }
       })
       .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
       .finally(function () {
