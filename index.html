@@ -164,11 +164,12 @@
 
       <div class="export-section">
         <p class="export-title">导出图片</p>
+        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩，目标 ≤300KB（PNG 过大时自动转 JPG）</p>
         <div class="form-group export-format-group">
           <label>导出格式</label>
           <div class="export-format-options" id="formatOptions">
-            <button type="button" class="export-format-btn active" data-format="png">PNG</button>
-            <button type="button" class="export-format-btn" data-format="jpg">JPG</button>
+            <button type="button" class="export-format-btn" data-format="png">PNG</button>
+            <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
             <button type="button" class="export-format-btn" data-format="gif">GIF</button>
           </div>
         </div>
@@ -195,7 +196,13 @@
   'use strict';
 
   var EXPORT_PIXEL_RATIO = 1;
-  var exportFormat = 'png';
+  var MAX_EXPORT_BYTES = 300 * 1024;
+  var JPEG_BG = '#F7F7F7';
+  var JPEG_QUALITIES = [0.88, 0.82, 0.76, 0.7, 0.64, 0.58, 0.52, 0.46, 0.4, 0.35];
+  var JPEG_SCALES = [1, 0.88, 0.76, 0.65];
+  var GIF_SCALES = [1, 0.72, 0.58, 0.48];
+  var GIF_PALETTE_SIZES = [256, 128, 64, 32];
+  var exportFormat = 'jpg';
   var exporting = false;
 
   var svgHero = '<svg xmlns="http://www.w3.org/2000/svg" width="1141" height="1128" viewBox="0 0 1141 1128">' +
@@ -446,6 +453,114 @@
     }));
   }
 
+  function getDataUrlByteSize(dataUrl) {
+    var base64 = dataUrl.indexOf(',') >= 0 ? dataUrl.split(',')[1] : dataUrl;
+    return Math.ceil(base64.replace(/=+$/, '').length * 0.75);
+  }
+
+  function loadImageDataUrl(dataUrl) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+  }
+
+  function resizePngDataUrl(pngDataUrl, scale) {
+    return loadImageDataUrl(pngDataUrl).then(function (img) {
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = JPEG_BG;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/png');
+    });
+  }
+
+  function fitJpegUnderLimit(pngDataUrl, maxBytes) {
+    function attempt(scaleIndex, qualityIndex, png) {
+      var scale = JPEG_SCALES[scaleIndex];
+      var prep = png
+        ? Promise.resolve(png)
+        : scale === 1
+          ? Promise.resolve(pngDataUrl)
+          : resizePngDataUrl(pngDataUrl, scale);
+      return prep.then(function (currentPng) {
+        if (qualityIndex >= JPEG_QUALITIES.length) {
+          if (scaleIndex + 1 >= JPEG_SCALES.length) {
+            return pngDataUrlToJpeg(currentPng, JPEG_QUALITIES[JPEG_QUALITIES.length - 1], JPEG_BG);
+          }
+          return attempt(scaleIndex + 1, 0, null);
+        }
+        return pngDataUrlToJpeg(currentPng, JPEG_QUALITIES[qualityIndex], JPEG_BG).then(function (jpg) {
+          if (getDataUrlByteSize(jpg) <= maxBytes) return jpg;
+          return attempt(scaleIndex, qualityIndex + 1, currentPng);
+        });
+      });
+    }
+    return attempt(0, 0, null);
+  }
+
+  function optimizePngExport(pngDataUrl, format, maxBytes) {
+    if (format === 'png' && getDataUrlByteSize(pngDataUrl) <= maxBytes) {
+      return Promise.resolve({ dataUrl: pngDataUrl, format: 'png' });
+    }
+    return fitJpegUnderLimit(pngDataUrl, maxBytes).then(function (jpg) {
+      var result = { dataUrl: jpg, format: 'jpg' };
+      if (format === 'png') result.note = 'PNG 超过 300KB，已自动转为 JPG 压缩导出';
+      return result;
+    });
+  }
+
+  function scaleCanvas(source, scale) {
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(source.width * scale));
+    canvas.height = Math.max(1, Math.round(source.height * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = JPEG_BG;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  function canvasToGifWithPalette(canvas, paletteSize, gifenc) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    var imgData = ctx.getImageData(0, 0, w, h);
+    var palette = gifenc.quantize(imgData.data, paletteSize);
+    var index = gifenc.applyPalette(imgData.data, palette);
+    var gif = gifenc.GIFEncoder();
+    gif.writeFrame(index, w, h, { palette: palette, delay: 0 });
+    gif.finish();
+    var bytes = gif.bytes();
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return 'data:image/gif;base64,' + btoa(bin);
+  }
+
+  function fitGifUnderLimit(canvas, maxBytes, gifenc) {
+    function attempt(scaleIndex, paletteIndex) {
+      var scale = GIF_SCALES[scaleIndex];
+      var paletteSize = GIF_PALETTE_SIZES[paletteIndex];
+      var target = scale === 1 ? canvas : scaleCanvas(canvas, scale);
+      var gifUrl = canvasToGifWithPalette(target, paletteSize, gifenc);
+      if (getDataUrlByteSize(gifUrl) <= maxBytes) {
+        return { dataUrl: gifUrl, format: 'gif' };
+      }
+      if (paletteIndex + 1 < GIF_PALETTE_SIZES.length) {
+        return attempt(scaleIndex, paletteIndex + 1);
+      }
+      if (scaleIndex + 1 < GIF_SCALES.length) {
+        return attempt(scaleIndex + 1, 0);
+      }
+      return { dataUrl: gifUrl, format: 'gif', note: 'GIF 已尽力压缩，仍可能超过 300KB' };
+    }
+    return attempt(0, 0);
+  }
+
   function downloadDataUrl(dataUrl, filename) {
     var link = document.createElement('a');
     link.download = filename;
@@ -458,23 +573,6 @@
     return base + '.' + (format === 'jpg' ? 'jpg' : format);
   }
 
-  function canvasToGifDataUrl(canvas) {
-    return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
-      var ctx = canvas.getContext('2d');
-      var w = canvas.width, h = canvas.height;
-      var imgData = ctx.getImageData(0, 0, w, h);
-      var palette = gifenc.quantize(imgData.data, 256);
-      var index = gifenc.applyPalette(imgData.data, palette);
-      var gif = gifenc.GIFEncoder();
-      gif.writeFrame(index, w, h, { palette: palette, delay: 0 });
-      gif.finish();
-      var bytes = gif.bytes();
-      var bin = '';
-      for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      return 'data:image/gif;base64,' + btoa(bin);
-    });
-  }
-
   function pngDataUrlToJpeg(pngDataUrl, quality, backgroundColor) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
@@ -483,11 +581,11 @@
         canvas.width = img.width;
         canvas.height = img.height;
         var ctx = canvas.getContext('2d');
-        ctx.fillStyle = backgroundColor || '#F7F7F7';
+        ctx.fillStyle = backgroundColor || JPEG_BG;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
         try {
-          resolve(canvas.toDataURL('image/jpeg', quality || 0.92));
+          resolve(canvas.toDataURL('image/jpeg', quality || 0.88));
         } catch (err) {
           reject(err);
         }
@@ -500,22 +598,35 @@
   function capturePosterDataUrl(node, width, height, format) {
     assertExportReady();
     var opts = getCaptureOptions(width, height);
-    if (format === 'png') return htmlToImage.toPng(node, opts);
-    if (format === 'jpg') {
-      return htmlToImage.toPng(node, opts).then(function (pngUrl) {
-        return pngDataUrlToJpeg(pngUrl, 0.92, '#F7F7F7');
+    if (format === 'gif') {
+      return htmlToImage.toCanvas(node, opts).then(function (canvas) {
+        return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
+          return fitGifUnderLimit(canvas, MAX_EXPORT_BYTES, gifenc);
+        });
       });
     }
-    if (format === 'gif') {
-      return htmlToImage.toCanvas(node, opts).then(canvasToGifDataUrl);
-    }
-    return Promise.reject(new Error('不支持的格式'));
+    return htmlToImage.toPng(node, opts).then(function (pngUrl) {
+      if (format === 'jpg') {
+        return fitJpegUnderLimit(pngUrl, MAX_EXPORT_BYTES).then(function (jpg) {
+          return { dataUrl: jpg, format: 'jpg' };
+        });
+      }
+      return optimizePngExport(pngUrl, format, MAX_EXPORT_BYTES);
+    });
   }
 
   function prepareAndExport(node, width, height, format) {
     return ensureExportableImages(node).then(function () {
       return capturePosterDataUrl(node, width, height, format);
     });
+  }
+
+  function downloadExportResult(result, exportName, requestedFormat) {
+    var dataUrl = result.dataUrl || result;
+    var fmt = result.format || requestedFormat;
+    if (result.note) console.info(result.note);
+    console.info('导出完成：' + fmt.toUpperCase() + '，约 ' + Math.round(getDataUrlByteSize(dataUrl) / 1024) + ' KB');
+    downloadDataUrl(dataUrl, resolveFilename(exportName, fmt));
   }
 
   function exportPoster(key) {
@@ -526,7 +637,7 @@
     exporting = true;
     setExportDisabled(true);
     prepareAndExport(node, cfg.width, cfg.height, exportFormat)
-      .then(function (url) { downloadDataUrl(url, resolveFilename(cfg.exportName, exportFormat)); })
+      .then(function (result) { downloadExportResult(result, cfg.exportName, exportFormat); })
       .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
       .finally(function () { exporting = false; setExportDisabled(false); });
   }
@@ -542,7 +653,7 @@
         var node = exportNodes[key];
         var cfg = POSTER_SIZES[key];
         return prepareAndExport(node, cfg.width, cfg.height, exportFormat)
-          .then(function (url) { downloadDataUrl(url, resolveFilename(cfg.exportName, exportFormat)); })
+          .then(function (result) { downloadExportResult(result, cfg.exportName, exportFormat); })
           .then(function () { return new Promise(function (r) { setTimeout(r, 400); }); });
       });
     });
