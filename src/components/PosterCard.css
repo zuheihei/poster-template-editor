@@ -1,0 +1,113 @@
+.poster-card {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+}
+
+.poster-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.poster-hero {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.poster-hero-img {
+  position: absolute;
+  object-fit: cover;
+  display: block;
+}
+
+.poster-gradient {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.01) 0%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+.poster-avatar {
+  position: absolute;
+  z-index: 3;
+  object-fit: cover;
+  display: block;
+}
+
+.poster-group-name {
+  position: absolute;
+  z-index: 4;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.poster-members {
+  position: absolute;
+  z-index: 4;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.poster-tag {
+  position: absolute;
+  z-index: 5;
+}
+
+.poster-tag-line {
+  position: absolute;
+  height: 1px;
+  left: 0;
+}
+
+.poster-tag-line-right {
+  left: auto;
+}
+
+.poster-tag-text {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.poster-quote-wrap {
+  position: absolute;
+  z-index: 6;
+}
+
+.poster-quote-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(8%) saturate(1200%) hue-rotate(358deg);
+}
+
+.poster-headline {
+  position: absolute;
+  z-index: 7;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.poster-headline-text {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

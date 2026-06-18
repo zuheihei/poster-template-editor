@@ -1,0 +1,208 @@
+.editor-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e8e8e8;
+  padding: 24px 20px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
+
+.editor-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.form-group input[type='text'] {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.form-group input[type='text']:focus {
+  border-color: #888580;
+}
+
+.fetch-row {
+  display: flex;
+  gap: 8px;
+}
+
+.fetch-row input[type='text'] {
+  flex: 1;
+  min-width: 0;
+}
+
+.fetch-btn {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  border: 1px solid #725940;
+  border-radius: 8px;
+  background: #725940;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.fetch-btn:hover:not(:disabled) {
+  background: #5f4a36;
+}
+
+.fetch-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fetch-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.fetch-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #c0392b;
+  line-height: 1.5;
+}
+
+.upload-btn {
+  display: inline-block;
+  padding: 9px 16px;
+  background: #f5f5f5;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.upload-btn:hover {
+  background: #eee;
+}
+
+.style-note {
+  margin-top: 28px;
+  padding: 14px;
+  background: #faf9f7;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.style-note-title {
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+.style-note ul {
+  margin: 8px 0 8px 18px;
+}
+
+.export-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.export-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 12px;
+}
+
+.export-format-group {
+  margin-bottom: 14px;
+}
+
+.export-format-options {
+  display: flex;
+  gap: 8px;
+}
+
+.export-format-btn {
+  flex: 1;
+  padding: 8px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.export-format-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.export-format-btn.active {
+  background: #725940;
+  border-color: #725940;
+  color: #fff;
+}
+
+.export-format-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.export-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.export-btn.primary {
+  background: #2c2a26;
+  color: #fff;
+  border-color: #2c2a26;
+}
+
+.export-btn.primary:hover:not(:disabled) {
+  background: #3d3a35;
+}
+
+.export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
