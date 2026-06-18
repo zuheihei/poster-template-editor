@@ -164,7 +164,7 @@
 
       <div class="export-section">
         <p class="export-title">导出图片</p>
-        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩，目标 ≤300KB（PNG 过大时自动转 JPG）</p>
+        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩，目标 ≤300KB（PNG 保持 PNG，必要时轻微缩小尺寸）</p>
         <div class="form-group export-format-group">
           <label>导出格式</label>
           <div class="export-format-options" id="formatOptions">
@@ -199,7 +199,8 @@
   var MAX_EXPORT_BYTES = 300 * 1024;
   var JPEG_BG = '#F7F7F7';
   var JPEG_QUALITIES = [0.88, 0.82, 0.76, 0.7, 0.64, 0.58, 0.52, 0.46, 0.4, 0.35];
-  var JPEG_SCALES = [1, 0.88, 0.76, 0.65];
+  var JPEG_SCALES = [1, 0.92, 0.84, 0.76];
+  var PNG_SCALES = [1, 0.98, 0.96, 0.94, 0.92, 0.9, 0.88, 0.86, 0.84, 0.82, 0.8, 0.76, 0.72];
   var GIF_SCALES = [1, 0.72, 0.58, 0.48];
   var GIF_PALETTE_SIZES = [256, 128, 64, 32];
   var exportFormat = 'jpg';
@@ -504,15 +505,30 @@
     return attempt(0, 0, null);
   }
 
-  function optimizePngExport(pngDataUrl, format, maxBytes) {
-    if (format === 'png' && getDataUrlByteSize(pngDataUrl) <= maxBytes) {
+  function fitPngUnderLimit(pngDataUrl, maxBytes) {
+    function attempt(scaleIndex) {
+      var scale = PNG_SCALES[scaleIndex];
+      var prep = scale === 1
+        ? Promise.resolve(pngDataUrl)
+        : resizePngDataUrl(pngDataUrl, scale);
+      return prep.then(function (png) {
+        if (getDataUrlByteSize(png) <= maxBytes) {
+          return { dataUrl: png, format: 'png' };
+        }
+        if (scaleIndex + 1 < PNG_SCALES.length) {
+          return attempt(scaleIndex + 1);
+        }
+        return { dataUrl: png, format: 'png', note: 'PNG 已尽力压缩，仍可能超过 300KB' };
+      });
+    }
+    return attempt(0);
+  }
+
+  function optimizePngExport(pngDataUrl, maxBytes) {
+    if (getDataUrlByteSize(pngDataUrl) <= maxBytes) {
       return Promise.resolve({ dataUrl: pngDataUrl, format: 'png' });
     }
-    return fitJpegUnderLimit(pngDataUrl, maxBytes).then(function (jpg) {
-      var result = { dataUrl: jpg, format: 'jpg' };
-      if (format === 'png') result.note = 'PNG 超过 300KB，已自动转为 JPG 压缩导出';
-      return result;
-    });
+    return fitPngUnderLimit(pngDataUrl, maxBytes);
   }
 
   function scaleCanvas(source, scale) {
@@ -611,7 +627,7 @@
           return { dataUrl: jpg, format: 'jpg' };
         });
       }
-      return optimizePngExport(pngUrl, format, MAX_EXPORT_BYTES);
+      return optimizePngExport(pngUrl, MAX_EXPORT_BYTES);
     });
   }
 
