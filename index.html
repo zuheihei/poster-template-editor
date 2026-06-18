@@ -164,7 +164,7 @@
 
       <div class="export-section">
         <p class="export-title">导出图片</p>
-        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩，目标 ≤300KB（PNG 保持 PNG，必要时轻微缩小尺寸）</p>
+        <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
         <div class="form-group export-format-group">
           <label>导出格式</label>
           <div class="export-format-options" id="formatOptions">
@@ -196,10 +196,12 @@
   'use strict';
 
   var EXPORT_PIXEL_RATIO = 1;
-  var MAX_EXPORT_BYTES = 300 * 1024;
+  var MAX_JPEG_BYTES = 200 * 1024;
+  var MAX_PNG_BYTES = 300 * 1024;
+  var MAX_GIF_BYTES = 300 * 1024;
   var JPEG_BG = '#F7F7F7';
-  var JPEG_QUALITIES = [0.88, 0.82, 0.76, 0.7, 0.64, 0.58, 0.52, 0.46, 0.4, 0.35];
-  var JPEG_SCALES = [1, 0.92, 0.84, 0.76];
+  var JPEG_QUALITIES = [0.85, 0.78, 0.72, 0.66, 0.6, 0.54, 0.48, 0.42, 0.36, 0.32];
+  var JPEG_SCALES = [1, 0.92, 0.84, 0.76, 0.68];
   var PNG_SCALES = [1, 0.98, 0.96, 0.94, 0.92, 0.9, 0.88, 0.86, 0.84, 0.82, 0.8, 0.76, 0.72];
   var GIF_SCALES = [1, 0.72, 0.58, 0.48];
   var GIF_PALETTE_SIZES = [256, 128, 64, 32];
@@ -617,17 +619,17 @@
     if (format === 'gif') {
       return htmlToImage.toCanvas(node, opts).then(function (canvas) {
         return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
-          return fitGifUnderLimit(canvas, MAX_EXPORT_BYTES, gifenc);
+          return fitGifUnderLimit(canvas, MAX_GIF_BYTES, gifenc);
         });
       });
     }
     return htmlToImage.toPng(node, opts).then(function (pngUrl) {
       if (format === 'jpg') {
-        return fitJpegUnderLimit(pngUrl, MAX_EXPORT_BYTES).then(function (jpg) {
+        return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES).then(function (jpg) {
           return { dataUrl: jpg, format: 'jpg' };
         });
       }
-      return optimizePngExport(pngUrl, MAX_EXPORT_BYTES);
+      return optimizePngExport(pngUrl, MAX_PNG_BYTES);
     });
   }
 
