@@ -187,8 +187,8 @@
     <div class="export-layer" id="exportLayer"></div>
   </div>
 
-  <!-- CDN：html-to-image（导出 PNG/JPG/GIF） -->
-  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+  <!-- 导出库（同源加载，避免 CDN 被墙导致导出失败） -->
+  <script src="/vendor/html-to-image.js"></script>
   <script>
 (function () {
   'use strict';
@@ -297,7 +297,7 @@
     });
     heroImg.src = data.heroImage;
     heroImg.alt = '';
-    heroImg.crossOrigin = 'anonymous';
+    if (data.heroImage.indexOf('data:') !== 0) heroImg.crossOrigin = 'anonymous';
     hero.appendChild(heroImg);
     card.appendChild(hero);
 
@@ -313,7 +313,7 @@
     });
     av.src = data.avatar;
     av.alt = '';
-    av.crossOrigin = 'anonymous';
+    if (data.avatar.indexOf('data:') !== 0) av.crossOrigin = 'anonymous';
     card.appendChild(av);
 
     card.appendChild(el('div', 'poster-group-name', {
@@ -393,8 +393,47 @@
       width: width, height: height,
       canvasWidth: width * EXPORT_PIXEL_RATIO, canvasHeight: height * EXPORT_PIXEL_RATIO,
       pixelRatio: EXPORT_PIXEL_RATIO, cacheBust: true, skipAutoScale: true,
+      skipFonts: true,
       style: { transform: 'none', margin: '0' }
     };
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function urlToDataUrl(url) {
+    if (!url || url.indexOf('data:') === 0) return Promise.resolve(url);
+    return fetch('/api/douban/image?url=' + encodeURIComponent(url))
+      .then(function (res) {
+        if (!res.ok) throw new Error('图片无法用于导出，请重新抓取或本地上传头图');
+        return res.blob();
+      })
+      .then(blobToDataUrl);
+  }
+
+  function ensureExportableImages(node) {
+    return Promise.all(Array.from(node.querySelectorAll('img')).map(function (img) {
+      return urlToDataUrl(img.getAttribute('src') || img.src).then(function (dataUrl) {
+        img.removeAttribute('crossorigin');
+        img.src = dataUrl;
+        return new Promise(function (resolve) {
+          if (img.complete) resolve();
+          else { img.onload = resolve; img.onerror = resolve; }
+        });
+      });
+    }));
+  }
+
+  function assertExportReady() {
+    if (typeof htmlToImage === 'undefined') {
+      throw new Error('导出组件未加载，请刷新页面后重试');
+    }
   }
 
   function waitForImages(node) {
@@ -435,14 +474,47 @@
     });
   }
 
+  function pngDataUrlToJpeg(pngDataUrl, quality, backgroundColor) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = backgroundColor || '#F7F7F7';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        try {
+          resolve(canvas.toDataURL('image/jpeg', quality || 0.92));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = function () { reject(new Error('JPG 转换失败')); };
+      img.src = pngDataUrl;
+    });
+  }
+
   function capturePosterDataUrl(node, width, height, format) {
+    assertExportReady();
     var opts = getCaptureOptions(width, height);
     if (format === 'png') return htmlToImage.toPng(node, opts);
-    if (format === 'jpg') return htmlToImage.toJpeg(Object.assign({}, opts, { quality: 0.92, backgroundColor: '#F7F7F7' }));
+    if (format === 'jpg') {
+      return htmlToImage.toPng(node, opts).then(function (pngUrl) {
+        return pngDataUrlToJpeg(pngUrl, 0.92, '#F7F7F7');
+      });
+    }
     if (format === 'gif') {
       return htmlToImage.toCanvas(node, opts).then(canvasToGifDataUrl);
     }
     return Promise.reject(new Error('不支持的格式'));
+  }
+
+  function prepareAndExport(node, width, height, format) {
+    return ensureExportableImages(node).then(function () {
+      return capturePosterDataUrl(node, width, height, format);
+    });
   }
 
   function exportPoster(key) {
@@ -452,10 +524,9 @@
     if (!node) return;
     exporting = true;
     setExportDisabled(true);
-    waitForImages(node)
-      .then(function () { return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat); })
+    prepareAndExport(node, cfg.width, cfg.height, exportFormat)
       .then(function (url) { downloadDataUrl(url, resolveFilename(cfg.exportName, exportFormat)); })
-      .catch(function (e) { alert('导出失败，请稍后重试'); console.error(e); })
+      .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
       .finally(function () { exporting = false; setExportDisabled(false); });
   }
 
@@ -469,13 +540,12 @@
       chain = chain.then(function () {
         var node = exportNodes[key];
         var cfg = POSTER_SIZES[key];
-        return waitForImages(node)
-          .then(function () { return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat); })
+        return prepareAndExport(node, cfg.width, cfg.height, exportFormat)
           .then(function (url) { downloadDataUrl(url, resolveFilename(cfg.exportName, exportFormat)); })
           .then(function () { return new Promise(function (r) { setTimeout(r, 400); }); });
       });
     });
-    chain.catch(function (e) { alert('导出失败，请稍后重试'); console.error(e); })
+    chain.catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
       .finally(function () { exporting = false; setExportDisabled(false); });
   }
 
