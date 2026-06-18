@@ -9,6 +9,101 @@ export function extractTopicId(input) {
   return match[1];
 }
 
+export function extractGroupId(input) {
+  const match = String(input).match(/douban\.com\/group\/([^/?#]+)/i);
+  if (!match) {
+    throw new Error('请输入有效的小组链接，例如 https://www.douban.com/group/123456/');
+  }
+  const id = match[1];
+  if (id === 'topic' || id === 'discuss') {
+    throw new Error('请输入小组主页链接，不是帖子链接');
+  }
+  return id;
+}
+
+export function normalizeGroupUrl(input) {
+  const groupId = /^\d+$/.test(String(input).trim())
+    ? String(input).trim()
+    : extractGroupId(input);
+  return `https://www.douban.com/group/${groupId}/`;
+}
+
+async function fetchGroupFromApi(groupId) {
+  const apiUrl = `https://m.douban.com/rexxar/api/v2/group/${groupId}`;
+  const res = await fetch(apiUrl, {
+    headers: {
+      'User-Agent': MOBILE_UA,
+      Accept: 'application/json, text/plain, */*',
+      Referer: normalizeGroupUrl(groupId),
+    },
+    redirect: 'follow',
+  });
+
+  if (!res.ok) {
+    throw new Error(`抓取失败（HTTP ${res.status}）`);
+  }
+
+  const group = await res.json();
+  if (!group?.id && !group?.name) {
+    throw new Error('未能解析小组信息');
+  }
+
+  const avatar = toLargeImageUrl(group.avatar || group.large_avatar || group.icon || '');
+  if (!avatar) {
+    throw new Error('未能获取小组头像');
+  }
+
+  return {
+    id: String(group.id || groupId),
+    name: group.name || '',
+    avatar,
+    memberCount: group.member_count,
+    sourceUrl: normalizeGroupUrl(group.id || groupId),
+  };
+}
+
+export async function fetchDoubanGroup(input) {
+  const groupId = extractGroupId(input);
+  return fetchGroupFromApi(groupId);
+}
+
+export async function fetchDoubanGroupsBatch(inputs, { concurrency = 3 } = {}) {
+  const urls = [...new Set(
+    inputs
+      .map((item) => String(item).trim())
+      .filter(Boolean),
+  )];
+
+  if (!urls.length) {
+    throw new Error('请至少提供一个小组链接');
+  }
+
+  const groups = [];
+  const errors = [];
+
+  for (let i = 0; i < urls.length; i += concurrency) {
+    const chunk = urls.slice(i, i + concurrency);
+    const results = await Promise.all(
+      chunk.map(async (url) => {
+        try {
+          const group = await fetchDoubanGroup(url);
+          if (!group.name) throw new Error('小组名称为空');
+          return { ok: true, group, url };
+        } catch (err) {
+          return { ok: false, url, error: err.message || '抓取失败' };
+        }
+      }),
+    );
+
+    results.forEach((result) => {
+      if (result.ok) groups.push(result.group);
+      else errors.push({ url: result.url, error: result.error });
+    });
+  }
+
+  return { groups, errors };
+}
+
 export function normalizeTopicUrl(input) {
   const topicId = /^\d+$/.test(String(input).trim())
     ? String(input).trim()
@@ -182,4 +277,4 @@ export function isAllowedDoubanImageUrl(urlString) {
 }
 
 /** @deprecated use fetchDoubanTopic */
-export const fetchDoubanGroup = fetchDoubanTopic;
+export const fetchDoubanGroupTopic = fetchDoubanTopic;
