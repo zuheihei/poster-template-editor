@@ -109,10 +109,27 @@ export async function exportPoster(node, filename, width, height, format = 'png'
   downloadDataUrl(dataUrl, resolveFilename(filename, format));
 }
 
-/** 一键导出全部海报 */
+/** 一键导出全部海报（打包 ZIP） */
 export async function exportAllPosters(items, format = 'png') {
+  const { zipSync } = await import('fflate');
+  const zipFiles = {};
+
   for (const item of items) {
-    await exportPoster(item.node, item.filename, item.width, item.height, format);
-    await new Promise((r) => setTimeout(r, 400));
+    await waitForImages(item.node);
+    const dataUrl = await capturePosterDataUrl(item.node, item.width, item.height, format);
+    const filename = resolveFilename(item.filename, format);
+    const binary = atob(dataUrl.split(',')[1] || '');
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    zipFiles[filename] = bytes;
   }
+
+  const zipped = zipSync(zipFiles, { level: 6 });
+  const blob = new Blob([zipped], { type: 'application/zip' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = `posters-${format}.zip`;
+  link.href = url;
+  link.click();
+  URL.revokeObjectURL(url);
 }

@@ -1,11 +1,22 @@
 (function (global) {
   'use strict';
 
+  var TOPIC_GRADIENT = {
+    start: '#708FC1',
+    startAlpha: 0,
+    end: '#354659',
+    endAlpha: 1,
+    /** Figma gradientTransform 主轴纵向缩放 ≈ 2.233 */
+    transformScale: 2.233,
+    transform: { a: 0, b: -2.233, c: 2.233, d: 0, e: -0.337, f: 1.616 },
+  };
+
   var TOPIC_FIGMA = {
     /** 专题推荐 1242×2110 */
     c: {
       frame: { width: 1242, height: 2110 },
-      mask: { left: 0, top: 1029, width: 1242, height: 1081 },
+      mask: { left: 0, top: 923, width: 1242, height: 1187 },
+      gradient: TOPIC_GRADIENT,
       badge: { left: 475.5, top: 1179, width: 290, height: 73, radius: 8, bg: '#5B9BBF', fontSize: 42, paddingX: 19, paddingY: 7 },
       title: { left: 31, top: 1271, width: 1179, height: 140, fontSize: 100, fontWeight: 600 },
       groups: { left: 31, top: 1430, width: 1179, minHeight: 220, gap: 18 },
@@ -13,7 +24,8 @@
     /** 专题推荐 1242×1863 */
     d: {
       frame: { width: 1242, height: 1863 },
-      mask: { left: 0, top: 1029, width: 1242, height: 834 },
+      mask: { left: 0, top: 676, width: 1242, height: 1187 },
+      gradient: TOPIC_GRADIENT,
       badge: { left: 475.5, top: 998, width: 290, height: 73, radius: 8, bg: '#5B9BBF', fontSize: 42, paddingX: 19, paddingY: 7 },
       title: { left: 31, top: 1090, width: 1179, height: 140, fontSize: 100, fontWeight: 600 },
       groups: { left: 31, top: 1249, width: 1179, minHeight: 220, gap: 18 },
@@ -40,7 +52,7 @@
     color: '#E2E2E2',
   };
 
-  var DEFAULT_GRADIENT = { start: '#708FC1', end: '#354659' };
+  var DEFAULT_GRADIENT_COLOR = '#354659';
 
   function hexToRgb(hex) {
     var h = String(hex || '').replace('#', '');
@@ -55,21 +67,23 @@
     return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + alpha + ')';
   }
 
-  function buildGradientStyle(start, end, spec) {
-    var rowCount = 2;
-    var groupsBottom = spec.groups.top
-      + CHIP.height * rowCount
-      + spec.groups.gap * (rowCount - 1)
-      + 28;
-    var solidPercent = ((groupsBottom - spec.mask.top) / spec.mask.height) * 100;
-    solidPercent = Math.min(88, Math.max(32, solidPercent));
-    var fadePercent = Math.max(0, solidPercent - 18).toFixed(1);
-    var solidStop = solidPercent.toFixed(1);
-    return 'linear-gradient(to bottom, '
-      + rgba(start, 0) + ' 0%, '
-      + rgba(end, 0.55) + ' ' + fadePercent + '%, '
-      + rgba(end, 1) + ' ' + solidStop + '%, '
-      + rgba(end, 1) + ' 100%)';
+  function buildGradientStyle(endColorOverride, spec) {
+    var gradient = spec.gradient || TOPIC_GRADIENT;
+    var start = gradient.start || '#708FC1';
+    var startAlpha = gradient.startAlpha != null ? gradient.startAlpha : 0;
+    var end = endColorOverride || gradient.end || DEFAULT_GRADIENT_COLOR;
+    var endAlpha = gradient.endAlpha != null ? gradient.endAlpha : 1;
+    var scale = gradient.transformScale || 1;
+    var transform = gradient.transform || {};
+    var image = 'linear-gradient(180deg, '
+      + rgba(start, startAlpha) + ' 0%, '
+      + rgba(end, endAlpha) + ' 100%)';
+    return {
+      backgroundImage: image,
+      backgroundSize: '100% ' + (scale * 100).toFixed(1) + '%',
+      backgroundPosition: ((transform.e || 0) * 100).toFixed(1) + '% 0',
+      backgroundRepeat: 'no-repeat',
+    };
   }
 
   function buildBadge(badgeSpec) {
@@ -97,6 +111,124 @@
       textAlign: 'center',
     }, '豆瓣专题推荐'));
     return badge;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    var max = Math.max(r, g, b);
+    var min = Math.min(r, g, b);
+    var h = 0;
+    var s = 0;
+    var l = (max + min) / 2;
+    if (max !== min) {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        default: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+
+  function hslToRgb(h, s, l) {
+    h /= 360;
+    s /= 100;
+    l /= 100;
+    var r;
+    var g;
+    var b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      var hue2rgb = function (p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return {
+      r: Math.round(r * 255),
+      g: Math.round(g * 255),
+      b: Math.round(b * 255),
+    };
+  }
+
+  function dominantColorFromPixels(data, options) {
+    options = options || {};
+    var filterExtremes = options.filterExtremes !== false;
+    var buckets = {};
+    var sums = {};
+    for (var i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 20) continue;
+      var r = data[i];
+      var g = data[i + 1];
+      var b = data[i + 2];
+      if (filterExtremes) {
+        var hsl = rgbToHsl(r, g, b);
+        if (hsl.l < 8 || hsl.l > 92 || hsl.s < 6) continue;
+      }
+      var key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+      if (!buckets[key]) {
+        buckets[key] = 0;
+        sums[key] = { r: 0, g: 0, b: 0 };
+      }
+      buckets[key]++;
+      sums[key].r += r;
+      sums[key].g += g;
+      sums[key].b += b;
+    }
+    var bestKey = null;
+    var bestCount = 0;
+    Object.keys(buckets).forEach(function (key) {
+      if (buckets[key] > bestCount) {
+        bestCount = buckets[key];
+        bestKey = key;
+      }
+    });
+    if (!bestKey) return null;
+    var count = buckets[bestKey];
+    return {
+      r: Math.round(sums[bestKey].r / count),
+      g: Math.round(sums[bestKey].g / count),
+      b: Math.round(sums[bestKey].b / count),
+    };
+  }
+
+  function toHarmoniousGradientColor(r, g, b) {
+    var hsl = rgbToHsl(r, g, b);
+    hsl.s = clamp(hsl.s * 0.85, 25, 75);
+    hsl.l = clamp(hsl.l * 0.42, 18, 40);
+    var rgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+    return rgbToHex(
+      Math.max(0, Math.min(255, rgb.r)),
+      Math.max(0, Math.min(255, rgb.g)),
+      Math.max(0, Math.min(255, rgb.b))
+    );
+  }
+
+  function harmoniousGradientColorFromPixels(data) {
+    var dominant = dominantColorFromPixels(data, { filterExtremes: true });
+    if (!dominant) {
+      dominant = dominantColorFromPixels(data, { filterExtremes: false });
+    }
+    if (!dominant) return null;
+    return toHarmoniousGradientColor(dominant.r, dominant.g, dominant.b);
   }
 
   function escHtml(s) {
@@ -145,37 +277,41 @@
     return chip;
   }
 
+  function applyTopicHeroTransform(img, data, frameWidth, frameHeight, key) {
+    if (!global.HeroEditor) return;
+    var transform = global.HeroEditor.resolveHeroTransform(data, key);
+    global.HeroEditor.applyHeroTransform(img, frameWidth, frameHeight, transform, null, { bottomFade: true });
+  }
+
   function buildTopicPoster(key, data) {
     var spec = TOPIC_FIGMA[key];
     if (!spec) throw new Error('未知专题模板：' + key);
     var w = spec.frame.width;
     var h = spec.frame.height;
-    var gradStart = data.gradientStart || DEFAULT_GRADIENT.start;
-    var gradEnd = data.gradientEnd || DEFAULT_GRADIENT.end;
+    var gradColor = data.gradientColor || data.gradientEnd || data.gradientStart || DEFAULT_GRADIENT_COLOR;
 
     var card = el('div', 'poster-card topic-poster', {
       width: w + 'px',
       height: h + 'px',
       position: 'relative',
       overflow: 'hidden',
-      background: gradEnd,
+      background: gradColor,
     });
 
     var hero = el('div', 'topic-hero', {
       position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '1', overflow: 'hidden',
     });
-    var heroImg = el('img', '', {
-      position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-      minWidth: '100%', minHeight: '100%', width: 'auto', height: 'auto',
-      objectFit: 'cover', display: 'block',
+    var heroImg = el('img', 'topic-hero-img', {
+      position: 'absolute', display: 'block', objectFit: 'cover',
     });
+    applyTopicHeroTransform(heroImg, data, w, h, key);
     heroImg.src = data.heroImage || '';
     heroImg.alt = '';
     if (data.heroImage && data.heroImage.indexOf('data:') !== 0) heroImg.crossOrigin = 'anonymous';
     hero.appendChild(heroImg);
     card.appendChild(hero);
 
-    card.appendChild(el('div', 'topic-gradient', {
+    card.appendChild(el('div', 'topic-gradient', Object.assign({
       position: 'absolute',
       left: spec.mask.left + 'px',
       top: spec.mask.top + 'px',
@@ -183,8 +319,7 @@
       height: spec.mask.height + 'px',
       zIndex: '2',
       pointerEvents: 'none',
-      background: buildGradientStyle(gradStart, gradEnd, spec),
-    }));
+    }, buildGradientStyle(gradColor, spec))));
 
     card.appendChild(buildBadge(spec.badge));
 
@@ -231,41 +366,63 @@
     return card;
   }
 
-  function sampleGradientFromImage(dataUrl) {
+  function sampleGradientFromImage(dataUrl, spec, heroTransform) {
+    spec = spec || TOPIC_FIGMA.c;
+    heroTransform = heroTransform || { xPercent: 50, yPercent: 50, scale: 100 };
     return new Promise(function (resolve, reject) {
+      if (!dataUrl) {
+        reject(new Error('没有头图'));
+        return;
+      }
       var img = new Image();
+      var src = String(dataUrl);
+      if (src.indexOf('data:') !== 0 && src.indexOf('blob:') !== 0) {
+        img.crossOrigin = 'anonymous';
+      }
       img.onload = function () {
-        var canvas = document.createElement('canvas');
-        var size = 48;
-        canvas.width = size;
-        canvas.height = size;
-        var ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(DEFAULT_GRADIENT);
-          return;
+        try {
+          var w = spec.frame.width;
+          var h = spec.frame.height;
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve({ color: DEFAULT_GRADIENT_COLOR });
+            return;
+          }
+
+          var scale = Math.max(0.001, (heroTransform.scale || 100) / 100);
+          var nw = img.naturalWidth || img.width;
+          var nh = img.naturalHeight || img.height;
+          var cx = w * (heroTransform.xPercent != null ? heroTransform.xPercent : 50) / 100;
+          var cy = h * (heroTransform.yPercent != null ? heroTransform.yPercent : 50) / 100;
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(scale, scale);
+          ctx.drawImage(img, -nw / 2, -nh / 2, nw, nh);
+          ctx.restore();
+
+          var maskTop = Math.max(0, Math.floor(spec.mask.top || 0));
+          var maskHeight = Math.min(
+            Math.max(0, spec.mask.height || h - maskTop),
+            h - maskTop
+          );
+          var maskData = ctx.getImageData(0, maskTop, w, maskHeight);
+          var color = harmoniousGradientColorFromPixels(maskData.data);
+
+          if (!color) {
+            resolve({ color: DEFAULT_GRADIENT_COLOR });
+            return;
+          }
+
+          resolve({ color: color });
+        } catch (err) {
+          reject(err);
         }
-        ctx.drawImage(img, 0, img.height * 0.55, img.width, img.height * 0.45, 0, 0, size, size);
-        var pixels = ctx.getImageData(0, 0, size, size).data;
-        var r = 0; var g = 0; var b = 0; var count = 0;
-        for (var i = 0; i < pixels.length; i += 4) {
-          r += pixels[i]; g += pixels[i + 1]; b += pixels[i + 2]; count++;
-        }
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-        var start = rgbToHex(
-          Math.min(255, Math.round(r * 1.15)),
-          Math.min(255, Math.round(g * 1.12)),
-          Math.min(255, Math.round(b * 1.1)),
-        );
-        var end = rgbToHex(
-          Math.max(0, Math.round(r * 0.45)),
-          Math.max(0, Math.round(g * 0.48)),
-          Math.max(0, Math.round(b * 0.52)),
-        );
-        resolve({ start: start, end: end });
       };
-      img.onerror = reject;
+      img.onerror = function () { reject(new Error('图片加载失败')); };
       img.src = dataUrl;
     });
   }
@@ -278,8 +435,9 @@
 
   global.TopicPoster = {
     TOPIC_FIGMA: TOPIC_FIGMA,
+    TOPIC_GRADIENT: TOPIC_GRADIENT,
     TOPIC_SIZES: TOPIC_SIZES,
-    DEFAULT_GRADIENT: DEFAULT_GRADIENT,
+    DEFAULT_GRADIENT_COLOR: DEFAULT_GRADIENT_COLOR,
     buildTopicPoster: buildTopicPoster,
     buildGradientStyle: buildGradientStyle,
     sampleGradientFromImage: sampleGradientFromImage,

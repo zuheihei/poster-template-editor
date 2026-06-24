@@ -1,5 +1,6 @@
 import {
   fetchDoubanTopic,
+  fetchDoubanGroupHomepage,
   fetchDoubanGroupsBatch,
   isAllowedDoubanImageUrl,
 } from './doubanParser.js';
@@ -23,15 +24,28 @@ async function readJsonBody(req) {
   return JSON.parse(raw);
 }
 
+function getRequestPath(req) {
+  return new URL(req.url || '/', 'http://localhost').pathname.replace(/\/+$/, '') || '/';
+}
+
+function isGroupTopicUrl(url) {
+  return /douban\.com\/group\/topic\//i.test(String(url));
+}
+
+function isGroupHomeUrl(url) {
+  return /douban\.com\/group\//i.test(String(url)) && !isGroupTopicUrl(url);
+}
+
 export function createDoubanApiMiddleware() {
   return async (req, res, next) => {
-    if (!req.url?.startsWith('/api/douban/')) {
+    const pathname = getRequestPath(req);
+    if (!pathname.startsWith('/api/douban/')) {
       next();
       return;
     }
 
     try {
-      if (req.method === 'POST' && req.url === '/api/douban/groups/batch') {
+      if (req.method === 'POST' && pathname === '/api/douban/groups/batch') {
         const body = await readJsonBody(req);
         const urls = Array.isArray(body.urls) ? body.urls : [];
 
@@ -45,21 +59,38 @@ export function createDoubanApiMiddleware() {
         return;
       }
 
-      if (req.method === 'POST' && req.url === '/api/douban/fetch') {
+      if (req.method === 'POST' && pathname === '/api/douban/group/fetch') {
         const body = await readJsonBody(req);
         const url = body.url?.trim();
 
         if (!url) {
-          sendJson(res, 400, { error: '请提供豆瓣小组帖链接' });
+          sendJson(res, 400, { error: '请提供豆瓣小组主页链接' });
           return;
         }
 
-        const data = await fetchDoubanTopic(url);
+        const data = await fetchDoubanGroupHomepage(url);
         sendJson(res, 200, data);
         return;
       }
 
-      if (req.method === 'GET' && req.url.startsWith('/api/douban/image')) {
+      if (req.method === 'POST' && pathname === '/api/douban/fetch') {
+        const body = await readJsonBody(req);
+        const url = body.url?.trim();
+        const mode = body.mode;
+
+        if (!url) {
+          sendJson(res, 400, { error: '请提供豆瓣链接' });
+          return;
+        }
+
+        const data = mode === 'groupHome' || isGroupHomeUrl(url)
+          ? await fetchDoubanGroupHomepage(url)
+          : await fetchDoubanTopic(url);
+        sendJson(res, 200, data);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/douban/image') {
         const requestUrl = new URL(req.url, 'http://localhost');
         const imageUrl = requestUrl.searchParams.get('url');
 

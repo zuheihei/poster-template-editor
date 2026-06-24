@@ -87,6 +87,20 @@
     .export-btn.primary { background: #2c2a26; color: #fff; border-color: #2c2a26; }
     .export-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+    .batch-download-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000; padding: 20px;
+    }
+    .batch-download-box {
+      background: #fff; border-radius: 12px; padding: 24px;
+      width: min(380px, 100%); box-shadow: 0 12px 40px rgba(0,0,0,.2);
+    }
+    .batch-download-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+    .batch-download-hint { font-size: 12px; color: #888; margin-bottom: 16px; line-height: 1.55; }
+    .batch-download-box .export-btn { margin-bottom: 10px; }
+    .batch-download-close { margin-top: 4px; width: 100%; }
+
     /* Preview */
     .preview-area {
       flex: 1;
@@ -100,8 +114,8 @@
     .preview-grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
     .preview-item { display: flex; flex-direction: column; align-items: center; }
     .preview-label { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 12px; }
-    .preview-scaler { overflow: hidden; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
-    .preview-inner { transform-origin: top left; }
+    .preview-scaler { overflow: visible; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
+    .preview-inner { transform-origin: top left; position: relative; overflow: visible; }
 
     /* Poster */
     .poster-card {
@@ -149,11 +163,43 @@
       border-radius: 8px; background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
     }
     .secondary-btn:hover { background: #f5f5f5; }
+    .range-row { margin-bottom: 12px; }
+    .range-row label { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 6px; }
+    .range-row input[type='range'] { width: 100%; accent-color: #725940; }
     .group-count { margin-top: 8px; font-size: 12px; color: #666; }
     .preview-section-title {
       width: 100%; font-size: 14px; font-weight: 600; color: #555;
       margin: 8px 0 16px; text-align: center;
     }
+
+    /* 头图画布编辑（仅预览） */
+    .hero-editor { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+    .hero-editor-box {
+      position: absolute; box-sizing: border-box; pointer-events: none; cursor: default;
+      border: 3px dashed #2563eb;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+      display: none;
+    }
+    .hero-editor.is-active .hero-editor-box {
+      display: block;
+      pointer-events: auto;
+      cursor: grab;
+    }
+    .hero-editor.is-active .hero-editor-box:active {
+      cursor: grabbing;
+    }
+    .preview-inner .poster-hero-img,
+    .preview-inner .topic-hero-img { cursor: pointer; }
+    .hero-editor-handle {
+      position: absolute; width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; border: 3px solid #2563eb; pointer-events: auto; z-index: 2;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    }
+    .hero-editor-handle-nw { left: -9px; top: -9px; cursor: nwse-resize; }
+    .hero-editor-handle-ne { right: -9px; top: -9px; cursor: nesw-resize; }
+    .hero-editor-handle-se { right: -9px; bottom: -9px; cursor: nwse-resize; }
+    .hero-editor-handle-sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
+    .topic-hero-img, .poster-hero-img { touch-action: none; user-select: none; }
   </style>
 </head>
 <body>
@@ -168,13 +214,13 @@
 
       <div class="tab-panel active" data-tab-panel="group" role="tabpanel">
       <div class="form-group">
-        <label for="doubanUrl">豆瓣小组帖链接</label>
+        <label for="doubanUrl">豆瓣小组主页链接</label>
         <div class="fetch-row">
-          <input id="doubanUrl" type="text" placeholder="https://www.douban.com/group/topic/490857750/">
+          <input id="doubanUrl" type="text" placeholder="https://www.douban.com/group/123456/">
           <button type="button" class="fetch-btn" id="fetchBtn">抓取</button>
         </div>
         <p class="fetch-error" id="fetchError" hidden></p>
-        <p class="fetch-hint" id="fetchHint">自动填充帖子标题、小组名称、成员数、头图和头像</p>
+        <p class="fetch-hint" id="fetchHint">自动填充小组名称、成员数、头像和头图</p>
       </div>
 
       <div class="form-group">
@@ -212,7 +258,7 @@
         <button type="button" class="export-btn" id="exportA">导出（1242×2110）</button>
         <button type="button" class="export-btn" id="exportB">导出（1242×1863）</button>
         <button type="button" class="export-btn primary" id="exportAllGroup">一键导出</button>
-        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+        <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
       </div>
       </div>
 
@@ -227,13 +273,9 @@
         </div>
         <div class="form-group">
           <label>蒙层渐变色</label>
-          <div class="color-row" style="margin-bottom:8px">
-            <input type="color" id="gradientStartPick" value="#708FC1">
-            <input id="gradientStart" type="text" value="#708FC1" placeholder="起点色">
-          </div>
           <div class="color-row">
-            <input type="color" id="gradientEndPick" value="#354659">
-            <input id="gradientEnd" type="text" value="#354659" placeholder="终点色">
+            <input type="color" id="gradientColorPick" value="#354659">
+            <input id="gradientColor" type="text" value="#354659" placeholder="蒙层主色">
           </div>
           <button type="button" class="secondary-btn" id="sampleGradientBtn">从图片取色</button>
         </div>
@@ -261,7 +303,7 @@
         <button type="button" class="export-btn" id="exportC">导出（1242×2110）</button>
         <button type="button" class="export-btn" id="exportD">导出（1242×1863）</button>
         <button type="button" class="export-btn primary" id="exportAllTopic">一键导出</button>
-        <p class="fetch-hint" style="margin-top:6px">请选择文件夹，一次保存两张图片</p>
+        <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
         </div>
       </div>
     </aside>
@@ -270,11 +312,13 @@
       <div class="preview-panel active" data-preview-panel="group">
         <h2 class="preview-heading">豆瓣小组推荐</h2>
         <p class="preview-hint">小组实时预览，基于 Figma 精确还原</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；拖角落或滚轮缩放；按住 Shift 可单独调整当前尺寸</p>
         <div class="preview-grid" id="previewGridGroup"></div>
       </div>
       <div class="preview-panel" data-preview-panel="topic">
         <h2 class="preview-heading">豆瓣专题推荐</h2>
         <p class="preview-hint">专题实时预览，基于 Figma 精确还原</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；拖角落或滚轮缩放；按住 Shift 可单独调整当前尺寸</p>
         <div class="preview-grid" id="previewGridTopic"></div>
       </div>
     </section>
@@ -286,6 +330,7 @@
   <script src="/vendor/html-to-image.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
   <script src="/topic-poster.js"></script>
+  <script src="/hero-editor.js"></script>
   <script>
 (function () {
   'use strict';
@@ -354,7 +399,11 @@
     members: '1239个成员',
     headline: '小钱买爽，才是真理财',
     heroImage: PLACEHOLDER_HERO,
-    avatar: PLACEHOLDER_AVATAR
+    avatar: PLACEHOLDER_AVATAR,
+    heroOffsetX: 50,
+    heroOffsetY: 33.3,
+    heroScale: 100,
+    heroTransformsBySize: {},
   };
 
   function makePlaceholderGroups(count) {
@@ -368,10 +417,132 @@
   var topicState = {
     title: '对方向你发送一只萌物',
     heroImage: PLACEHOLDER_HERO,
-    gradientStart: TopicPoster.DEFAULT_GRADIENT.start,
-    gradientEnd: TopicPoster.DEFAULT_GRADIENT.end,
+    heroScale: 100,
+    heroOffsetX: 50,
+    heroOffsetY: 50,
+    gradientColor: TopicPoster.DEFAULT_GRADIENT_COLOR,
+    heroTransformsBySize: {},
     groups: makePlaceholderGroups(3)
   };
+
+  function applyCoverHeroToState(isTopic) {
+    var src = isTopic ? topicState : state;
+    if (!src.heroImage) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        var t = HeroEditor.computeCoverTransform(
+          img.naturalWidth,
+          img.naturalHeight,
+          1242,
+          2110
+        );
+        src.heroOffsetX = t.xPercent;
+        src.heroOffsetY = t.yPercent;
+        src.heroScale = t.scale;
+        src.heroTransformsBySize = {};
+        resolve();
+      };
+      img.onerror = function () { resolve(); };
+      img.src = src.heroImage;
+    });
+  }
+
+  function resetTopicHeroTransform() {
+    return applyCoverHeroToState(true);
+  }
+
+  function resetGroupHeroTransform() {
+    return applyCoverHeroToState(false);
+  }
+
+  function getHeroTransformForKey(isTopic, key) {
+    var src = isTopic ? topicState : state;
+    return HeroEditor.resolveHeroTransform(src, key);
+  }
+
+  function applyHeroTransformToCard(img, card, isTopic, key, transform) {
+    if (!img || !card) return;
+    var fw = card.offsetWidth || parseInt(card.style.width, 10);
+    var fh = card.offsetHeight || parseInt(card.style.height, 10);
+    var container = null;
+    if (!isTopic) {
+      var heroEl = card.querySelector('.poster-hero');
+      if (heroEl) {
+        container = {
+          left: parseFloat(heroEl.style.left) || 0,
+          top: parseFloat(heroEl.style.top) || 0,
+        };
+      }
+    }
+    HeroEditor.applyHeroTransform(img, fw, fh, transform, container, { bottomFade: isTopic });
+  }
+
+  function syncHeroTransformToDom(isTopic, onlyKey) {
+    var keys = isTopic ? ['c', 'd'] : ['a', 'b'];
+    keys.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var transform = getHeroTransformForKey(isTopic, key);
+
+      var inner = document.querySelector('.preview-inner[data-variant-key="' + key + '"]');
+      if (inner) {
+        var card = inner.querySelector(isTopic ? '.topic-poster' : '.poster-card');
+        var img = inner.querySelector(isTopic ? '.topic-hero-img' : '.poster-hero-img');
+        applyHeroTransformToCard(img, card, isTopic, key, transform);
+      }
+
+      var node = exportNodes[key];
+      if (!node) return;
+      var exportImg = node.querySelector(isTopic ? '.topic-hero-img' : '.poster-hero-img');
+      if (!exportImg) return;
+      if (isTopic) {
+        var cfg = TopicPoster.TOPIC_SIZES[key];
+        HeroEditor.applyHeroTransform(exportImg, cfg.width, cfg.height, transform, null, { bottomFade: true });
+      } else {
+        var layout = layouts[key];
+        HeroEditor.applyHeroTransform(exportImg, layout.width, layout.height, transform, {
+          left: layout.hero.left,
+          top: layout.hero.top,
+        }, { bottomFade: false });
+      }
+    });
+
+    if (window.__heroEditorActive && window.__heroEditorActive.syncBox) {
+      window.__heroEditorActive.syncBox();
+    }
+  }
+
+  function attachPreviewHeroEditor(card, inner, img, frameWidth, frameHeight, previewScale, heroContainer, variantKey) {
+    var isTopic = card.classList.contains('topic-poster');
+    HeroEditor.attachHeroEditor(inner, img, {
+      previewScale: previewScale,
+      frameWidth: frameWidth,
+      frameHeight: frameHeight,
+      container: heroContainer,
+      getTransform: function () {
+        return getHeroTransformForKey(isTopic, variantKey);
+      },
+      setTransform: function (t, meta) {
+        meta = meta || {};
+        var src = isTopic ? topicState : state;
+        if (meta.independent && variantKey) {
+          if (!src.heroTransformsBySize) src.heroTransformsBySize = {};
+          src.heroTransformsBySize[variantKey] = {
+            xPercent: t.xPercent,
+            yPercent: t.yPercent,
+            scale: t.scale,
+          };
+          syncHeroTransformToDom(isTopic, variantKey);
+          return;
+        }
+        src.heroOffsetX = t.xPercent;
+        src.heroOffsetY = t.yPercent;
+        src.heroScale = t.scale;
+        src.heroTransformsBySize = {};
+        syncHeroTransformToDom(isTopic);
+      },
+    });
+  }
 
   function figmaLayoutNative(d) {
     return {
@@ -400,7 +571,8 @@
     return node;
   }
 
-  function buildPoster(layout, data, bg) {
+  function buildPoster(layout, data, bg, variantKey) {
+    var heroTransform = HeroEditor.resolveHeroTransform(data, variantKey);
     var h = layout.hero, g = layout.gradient, a = layout.avatar;
     var gn = layout.groupName, m = layout.members, t = layout.tag;
     var q = layout.quote, hl = layout.headline;
@@ -415,12 +587,14 @@
       borderBottomLeftRadius: r + 'px', borderBottomRightRadius: r + 'px'
     });
     var heroImg = el('img', 'poster-hero-img', {
-      width: h.imgWidth + 'px', height: h.imgHeight + 'px',
-      left: h.imgOffsetX + 'px', top: h.imgOffsetY + 'px'
+      position: 'absolute', display: 'block',
     });
     heroImg.src = data.heroImage;
     heroImg.alt = '';
     if (data.heroImage.indexOf('data:') !== 0) heroImg.crossOrigin = 'anonymous';
+    HeroEditor.applyHeroTransform(heroImg, layout.width, layout.height, heroTransform, {
+      left: h.left, top: h.top,
+    }, { bottomFade: false });
     hero.appendChild(heroImg);
     card.appendChild(hero);
 
@@ -494,13 +668,27 @@
       var item = el('div', 'preview-item');
       item.appendChild(el('p', 'preview-label', null, cfg.label));
       var scaler = el('div', 'preview-scaler', { width: layout.width * scale + 'px', height: layout.height * scale + 'px' });
-      var inner = el('div', 'preview-inner', { transform: 'scale(' + scale + ')', width: layout.width + 'px', height: layout.height + 'px' });
-      inner.appendChild(buildPoster(layout, state, bg));
+      var inner = el('div', 'preview-inner', {
+        transform: 'scale(' + scale + ')',
+        width: layout.width + 'px',
+        height: layout.height + 'px',
+      });
+      inner.dataset.variantKey = key;
+      inner.appendChild(buildPoster(layout, state, bg, key));
       scaler.appendChild(inner);
       item.appendChild(scaler);
       grid.appendChild(item);
 
-      exportNodes[key] = buildPoster(layout, state, bg);
+      var previewCard = inner.querySelector('.poster-card');
+      var previewImg = previewCard && previewCard.querySelector('.poster-hero-img');
+      if (previewCard && previewImg) {
+        attachPreviewHeroEditor(previewCard, inner, previewImg, layout.width, layout.height, scale, {
+          left: layout.hero.left,
+          top: layout.hero.top,
+        }, key);
+      }
+
+      exportNodes[key] = buildPoster(layout, state, bg, key);
     });
   }
 
@@ -512,11 +700,22 @@
       var item = el('div', 'preview-item');
       item.appendChild(el('p', 'preview-label', null, cfg.label));
       var scaler = el('div', 'preview-scaler', { width: cfg.width * scale + 'px', height: cfg.height * scale + 'px' });
-      var inner = el('div', 'preview-inner', { transform: 'scale(' + scale + ')', width: cfg.width + 'px', height: cfg.height + 'px' });
+      var inner = el('div', 'preview-inner', {
+        transform: 'scale(' + scale + ')',
+        width: cfg.width + 'px',
+        height: cfg.height + 'px',
+      });
+      inner.dataset.variantKey = key;
       inner.appendChild(TopicPoster.buildTopicPoster(key, topicState));
       scaler.appendChild(inner);
       item.appendChild(scaler);
       grid.appendChild(item);
+
+      var previewCard = inner.querySelector('.topic-poster');
+      var previewImg = previewCard && previewCard.querySelector('.topic-hero-img');
+      if (previewCard && previewImg) {
+        attachPreviewHeroEditor(previewCard, inner, previewImg, cfg.width, cfg.height, scale, null, key);
+      }
 
       exportNodes[key] = TopicPoster.buildTopicPoster(key, topicState);
     });
@@ -563,10 +762,8 @@
 
   function syncTopicInputs() {
     document.getElementById('topicTitle').value = topicState.title;
-    document.getElementById('gradientStart').value = topicState.gradientStart;
-    document.getElementById('gradientEnd').value = topicState.gradientEnd;
-    document.getElementById('gradientStartPick').value = topicState.gradientStart;
-    document.getElementById('gradientEndPick').value = topicState.gradientEnd;
+    document.getElementById('gradientColor').value = topicState.gradientColor;
+    document.getElementById('gradientColorPick').value = topicState.gradientColor;
     updateTopicGroupCount();
   }
 
@@ -750,89 +947,62 @@
     return attempt(0, 0);
   }
 
-  function downloadDataUrl(dataUrl, filename) {
+  function dataUrlToBlob(dataUrl) {
+    var parts = String(dataUrl).split(',');
+    var mimeMatch = parts[0].match(/:(.*?);/);
+    var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    var binary = atob(parts[1] || '');
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  function dataUrlToUint8Array(dataUrl) {
+    var parts = String(dataUrl).split(',');
+    var binary = atob(parts[1] || '');
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function loadFflate() {
+    return import('https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js');
+  }
+
+  function downloadAllExportResults(results, requestedFormat, zipName) {
+    var zipFiles = {};
+    results.forEach(function (item) {
+      var fmt = item.result.format || requestedFormat;
+      var filename = resolveFilename(item.cfg.exportName, fmt);
+      var dataUrl = item.result.dataUrl || item.result;
+      zipFiles[filename] = dataUrlToUint8Array(dataUrl);
+    });
+    return loadFflate().then(function (fflate) {
+      var zipped = fflate.zipSync(zipFiles, { level: 6 });
+      var blob = new Blob([zipped], { type: 'application/zip' });
+      return downloadBlob(blob, zipName || 'posters.zip');
+    });
+  }
+
+  function downloadBlob(blob, filename) {
     return new Promise(function (resolve) {
       var link = document.createElement('a');
       link.download = filename;
       link.style.display = 'none';
       document.body.appendChild(link);
-      var cleanup = function (href) {
-        if (href && href.indexOf('blob:') === 0) URL.revokeObjectURL(href);
+      var href = URL.createObjectURL(blob);
+      link.href = href;
+      link.click();
+      setTimeout(function () {
+        URL.revokeObjectURL(href);
         if (link.parentNode) link.parentNode.removeChild(link);
         resolve();
-      };
-      if (String(dataUrl).indexOf('data:') === 0) {
-        fetch(dataUrl).then(function (res) { return res.blob(); }).then(function (blob) {
-          var href = URL.createObjectURL(blob);
-          link.href = href;
-          link.click();
-          setTimeout(function () { cleanup(href); }, 600);
-        }).catch(function () {
-          link.href = dataUrl;
-          link.click();
-          setTimeout(cleanup, 600);
-        });
-        return;
-      }
-      link.href = dataUrl;
-      link.click();
-      setTimeout(cleanup, 600);
+      }, 1000);
     });
   }
 
-  function dataUrlToBlob(dataUrl) {
-    return new Promise(function (resolve, reject) {
-      try {
-        var parts = String(dataUrl).split(',');
-        var mimeMatch = parts[0].match(/:(.*?);/);
-        var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-        var binary = atob(parts[1] || '');
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        resolve(new Blob([bytes], { type: mime }));
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  function pickExportDirectory() {
-    if (typeof window.showDirectoryPicker !== 'function') return Promise.resolve(null);
-    return window.showDirectoryPicker({ mode: 'readwrite' }).catch(function () { return null; });
-  }
-
-  function writeResultsToDirectory(dirHandle, results, requestedFormat) {
-    return results.reduce(function (chain, item) {
-      return chain.then(function () {
-        var dataUrl = item.result.dataUrl || item.result;
-        var fmt = item.result.format || requestedFormat;
-        var filename = resolveFilename(item.cfg.exportName, fmt);
-        return dataUrlToBlob(dataUrl).then(function (blob) {
-          return dirHandle.getFileHandle(filename, { create: true }).then(function (fileHandle) {
-            return fileHandle.createWritable().then(function (writable) {
-              return writable.write(blob).then(function () { return writable.close(); });
-            });
-          });
-        });
-      });
-    }, Promise.resolve());
-  }
-
-  function downloadFilesSequentially(results, requestedFormat) {
-    return results.reduce(function (chain, item) {
-      return chain
-        .then(function () {
-          return downloadExportResult(item.result, item.cfg.exportName, requestedFormat);
-        })
-        .then(function () {
-          return new Promise(function (resolve) { setTimeout(resolve, 1000); });
-        });
-    }, Promise.resolve());
-  }
-
-  function saveExportResults(results, requestedFormat, dirHandle) {
-    if (dirHandle) return writeResultsToDirectory(dirHandle, results, requestedFormat);
-    return downloadFilesSequentially(results, requestedFormat);
+  function downloadDataUrl(dataUrl, filename) {
+    return downloadBlob(dataUrlToBlob(dataUrl), filename);
   }
 
   function resetExportState() {
@@ -947,19 +1117,19 @@
       resetExportState();
     }, 90000);
 
-    pickExportDirectory()
-      .then(function (dirHandle) {
-        return Promise.all(validKeys.map(function (key) {
-          var node = exportNodes[key];
-          var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
-          return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
-            return { cfg: cfg, result: result };
-          });
-        })).then(function (results) {
-          return saveExportResults(results, exportFormat, dirHandle);
-        });
+    Promise.all(validKeys.map(function (key) {
+      var node = exportNodes[key];
+      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+      return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
+        return { cfg: cfg, result: result };
+      });
+    }))
+      .then(function (results) {
+        var isTopic = validKeys.some(function (key) { return key === 'c' || key === 'd'; });
+        var zipName = (isTopic ? 'topic-posters' : 'group-posters') + '-' + exportFormat + '.zip';
+        return downloadAllExportResults(results, exportFormat, zipName);
       })
-      .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
+      .catch(function (e) { alert(e.message || '打包下载失败，请稍后重试'); console.error(e); })
       .finally(function () {
         clearTimeout(safetyTimer);
         resetExportState();
@@ -999,11 +1169,14 @@
       .catch(function () { return url; });
   }
 
-  function fetchDoubanTopic(url) {
+  function fetchDoubanGroupHome(url) {
+    if (!/\/group\/[^/?#\s]+\/?$/i.test(String(url).trim())) {
+      return Promise.reject(new Error('请填写完整的小组主页链接，例如 https://www.douban.com/group/123456/'));
+    }
     return fetch('/api/douban/fetch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url })
+      body: JSON.stringify({ url: url, mode: 'groupHome' })
     }).then(function (res) {
       return res.json().then(function (payload) {
         if (!res.ok) throw new Error(payload.error || '抓取失败');
@@ -1064,7 +1237,10 @@
     state.headline = e.target.value; render();
   });
   document.getElementById('heroUpload').addEventListener('change', function (e) {
-    readFileAsDataUrl(e.target.files[0], function (url) { state.heroImage = url; });
+    readFileAsDataUrl(e.target.files[0], function (url) {
+      state.heroImage = url;
+      applyCoverHeroToState(false).then(function () { render(); });
+    });
     e.target.value = '';
   });
   document.getElementById('avatarUpload').addEventListener('change', function (e) {
@@ -1074,8 +1250,28 @@
   document.getElementById('topicTitle').addEventListener('input', function (e) {
     topicState.title = e.target.value; render();
   });
+  function getTopicHeroTransform() {
+    return getHeroTransformForKey(true, 'c');
+  }
+
+  function applySampledGradientFromHero() {
+    return TopicPoster.sampleGradientFromImage(
+      topicState.heroImage,
+      TopicPoster.TOPIC_FIGMA.c,
+      getTopicHeroTransform()
+    ).then(function (colors) {
+      topicState.gradientColor = colors.color;
+      syncTopicInputs();
+    });
+  }
+
   document.getElementById('topicHeroUpload').addEventListener('change', function (e) {
-    readFileAsDataUrl(e.target.files[0], function (url) { topicState.heroImage = url; });
+    readFileAsDataUrl(e.target.files[0], function (url) {
+      topicState.heroImage = url;
+      applyCoverHeroToState(true).then(function () {
+        applySampledGradientFromHero().then(function () { render(); }).catch(function () { render(); });
+      });
+    });
     e.target.value = '';
   });
   function bindGradientInput(textId, pickId, key) {
@@ -1090,14 +1286,11 @@
       render();
     });
   }
-  bindGradientInput('gradientStart', 'gradientStartPick', 'gradientStart');
-  bindGradientInput('gradientEnd', 'gradientEndPick', 'gradientEnd');
+  bindGradientInput('gradientColor', 'gradientColorPick', 'gradientColor');
   document.getElementById('sampleGradientBtn').addEventListener('click', function () {
-    TopicPoster.sampleGradientFromImage(topicState.heroImage).then(function (colors) {
-      topicState.gradientStart = colors.start;
-      topicState.gradientEnd = colors.end;
-      syncTopicInputs(); render();
-    }).catch(function () { alert('取色失败，请手动选择渐变色'); });
+    applySampledGradientFromHero()
+      .then(function () { render(); })
+      .catch(function () { alert('取色失败，请手动选择渐变色'); });
   });
   document.getElementById('fetchTopicGroupsBtn').addEventListener('click', function () {
     var urls = document.getElementById('topicGroupUrls').value;
@@ -1127,13 +1320,16 @@
     errEl.hidden = true;
     document.getElementById('fetchBtn').textContent = '抓取中…';
     document.getElementById('fetchBtn').disabled = true;
-    fetchDoubanTopic(url).then(function (result) {
+    fetchDoubanGroupHome(url).then(function (result) {
       state.groupName = result.groupName;
       state.members = result.members;
       state.headline = result.headline || state.headline;
       state.heroImage = result.heroImage;
       state.avatar = result.avatar;
-      syncInputs(); render();
+      applyCoverHeroToState(false).then(function () {
+        syncInputs();
+        render();
+      });
     }).catch(function (e) {
       errEl.textContent = e.message || '抓取失败';
       errEl.hidden = false;
@@ -1163,9 +1359,9 @@
     var hint = document.getElementById('fetchHint');
     if (!hint) return;
     if (location.protocol === 'file:') {
-      hint.innerHTML = '自动填充帖子标题、小组名称、成员数、头图和头像。请运行 <code>npm start</code>，通过 http://localhost:5174 打开，勿直接用 file:// 打开。';
+      hint.innerHTML = '自动填充小组名称、成员数、头图和头像。请运行 <code>npm start</code>，通过 http://localhost:5174 打开，勿直接用 file:// 打开。';
     } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-      hint.textContent = '自动填充帖子标题、小组名称、成员数、头图和头像。当前为本地服务。';
+      hint.textContent = '自动填充小组名称、成员数、头图和头像。当前为本地服务；若提示接口不存在，请重启终端里的 npm start。';
     }
   })();
 

@@ -62,6 +62,40 @@ async function fetchGroupFromApi(groupId) {
   };
 }
 
+export async function fetchDoubanGroupHomepage(input) {
+  const group = await fetchDoubanGroup(input);
+  let heroImage = group.avatar;
+
+  try {
+    const pageRes = await fetch(group.sourceUrl, {
+      headers: {
+        'User-Agent': MOBILE_UA,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+    });
+    if (pageRes.ok) {
+      const html = await pageRes.text();
+      const ogMatch = html.match(/property="og:image"\s+content="([^"]+)"/i);
+      if (ogMatch?.[1]) {
+        heroImage = toLargeImageUrl(ogMatch[1]);
+      }
+    }
+  } catch {
+    // 使用头像作为头图回退
+  }
+
+  return {
+    groupName: group.name,
+    members: formatMembers(group.memberCount),
+    headline: group.name,
+    heroImage,
+    avatar: group.avatar,
+    sourceUrl: group.sourceUrl,
+    groupId: group.id,
+  };
+}
+
 export async function fetchDoubanGroup(input) {
   const groupId = extractGroupId(input);
   return fetchGroupFromApi(groupId);
