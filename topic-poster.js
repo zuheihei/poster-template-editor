@@ -296,7 +296,7 @@
     var gradColor = data.gradientColor || data.gradientEnd || data.gradientStart || DEFAULT_GRADIENT_COLOR;
     var badgeBg = resolveBadgeBackground(data, spec.badge);
 
-    var card = el('div', 'poster-card topic-poster', {
+    var card = el('div', 'poster-card topic-poster poster-font', {
       width: w + 'px',
       height: h + 'px',
       position: 'relative',

@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图文模板编辑器</title>
+  <link rel="preload" href="/fonts/source-han-sans-sc-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/source-han-sans-sc-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/fonts/poster-fonts.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -120,7 +123,7 @@
     /* Poster */
     .poster-card {
       position: relative; box-sizing: border-box; overflow: hidden; flex-shrink: 0;
-      font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+      font-family: 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
     }
     .poster-bg { position: absolute; inset: 0; z-index: 0; }
     .poster-hero { position: absolute; z-index: 1; overflow: hidden; }
@@ -363,7 +366,7 @@
   var svgHero = '<svg xmlns="http://www.w3.org/2000/svg" width="1141" height="1128" viewBox="0 0 1141 1128">' +
     '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#c8b8a8"/><stop offset="100%" stop-color="#8a7560"/></linearGradient></defs>' +
     '<rect width="1141" height="1128" fill="url(#g)"/>' +
-    '<text x="50%" y="50%" fill="#fff" font-size="48" font-family="PingFang SC,sans-serif" text-anchor="middle" dominant-baseline="middle" opacity="0.6">头图占位</text></svg>';
+    '<text x="50%" y="50%" fill="#fff" font-size="48" font-family="Source Han Sans SC,sans-serif" text-anchor="middle" dominant-baseline="middle" opacity="0.6">头图占位</text></svg>';
   var svgAvatar = '<svg xmlns="http://www.w3.org/2000/svg" width="115" height="117" viewBox="0 0 115 117">' +
     '<rect width="115" height="117" rx="10" fill="#725940"/>' +
     '<circle cx="57.5" cy="44" r="22" fill="#fff" opacity="0.85"/>' +
@@ -591,7 +594,7 @@
     var q = layout.quote, hl = layout.headline;
     var r = h.radius;
 
-    var card = el('div', 'poster-card', { width: layout.width + 'px', height: layout.height + 'px' });
+    var card = el('div', 'poster-card poster-font', { width: layout.width + 'px', height: layout.height + 'px' });
     card.appendChild(el('div', 'poster-bg', { background: bg.color, opacity: String(bg.opacity) }));
 
     var hero = el('div', 'poster-hero', {
@@ -783,12 +786,24 @@
     updateTopicGroupCount();
   }
 
+  var POSTER_FONT_FAMILY = 'Source Han Sans SC';
+
+  function ensurePosterFontsReady() {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    return Promise.all([
+      document.fonts.load('400 32px "' + POSTER_FONT_FAMILY + '"'),
+      document.fonts.load('600 32px "' + POSTER_FONT_FAMILY + '"'),
+    ]).then(function () {
+      return document.fonts.ready;
+    }).catch(function () { /* 字体加载失败时仍尝试导出 */ });
+  }
+
   function getCaptureOptions(width, height) {
     return {
       width: width, height: height,
       canvasWidth: width * EXPORT_PIXEL_RATIO, canvasHeight: height * EXPORT_PIXEL_RATIO,
       pixelRatio: EXPORT_PIXEL_RATIO, cacheBust: true, skipAutoScale: true,
-      skipFonts: true,
+      skipFonts: false,
       style: { transform: 'none', margin: '0' }
     };
   }
@@ -1078,7 +1093,9 @@
   }
 
   function prepareAndExport(node, width, height, format) {
-    return ensureExportableImages(node).then(function () {
+    return ensurePosterFontsReady().then(function () {
+      return ensureExportableImages(node);
+    }).then(function () {
       return capturePosterDataUrl(node, width, height, format);
     });
   }
@@ -1377,6 +1394,7 @@
   syncInputs();
   syncTopicInputs();
   resetExportState();
+  ensurePosterFontsReady();
   switchTab('group');
   render();
 })();

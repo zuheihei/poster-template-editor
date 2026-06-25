@@ -1,0 +1,20 @@
+/* 思源黑体 Source Han Sans SC（Noto Sans SC 简体子集，400/600 嵌入） */
+@font-face {
+  font-family: 'Source Han Sans SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('source-han-sans-sc-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Sans SC';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('source-han-sans-sc-600.woff2') format('woff2');
+}
+
+.poster-font {
+  font-family: 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
+}
