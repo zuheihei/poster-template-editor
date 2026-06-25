@@ -62,6 +62,18 @@ async function fetchGroupFromApi(groupId) {
   };
 }
 
+export async function fetchDoubanGroupHomepage(input) {
+  const group = await fetchDoubanGroup(input);
+
+  return {
+    groupName: group.name,
+    members: formatMembers(group.memberCount),
+    avatar: group.avatar,
+    sourceUrl: group.sourceUrl,
+    groupId: group.id,
+  };
+}
+
 export async function fetchDoubanGroup(input) {
   const groupId = extractGroupId(input);
   return fetchGroupFromApi(groupId);

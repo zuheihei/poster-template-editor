@@ -220,7 +220,7 @@
           <button type="button" class="fetch-btn" id="fetchBtn">抓取</button>
         </div>
         <p class="fetch-error" id="fetchError" hidden></p>
-        <p class="fetch-hint" id="fetchHint">自动填充小组名称、成员数、头像和头图</p>
+        <p class="fetch-hint" id="fetchHint">自动填充小组名称、成员数和头像（头图、主标题请手动填写或上传）</p>
       </div>
 
       <div class="form-group">
@@ -1183,13 +1183,9 @@
         return payload;
       });
     }).then(function (data) {
-      if (!data.groupName || !data.heroImage) throw new Error('未能解析小组信息');
-      return Promise.all([
-        loadImageAsDataUrl(data.heroImage),
-        loadImageAsDataUrl(data.avatar)
-      ]).then(function (imgs) {
-        data.heroImage = imgs[0];
-        data.avatar = imgs[1] || imgs[0];
+      if (!data.groupName || !data.avatar) throw new Error('未能解析小组信息');
+      return loadImageAsDataUrl(data.avatar).then(function (avatar) {
+        data.avatar = avatar;
         return data;
       });
     });
@@ -1323,13 +1319,9 @@
     fetchDoubanGroupHome(url).then(function (result) {
       state.groupName = result.groupName;
       state.members = result.members;
-      state.headline = result.headline || state.headline;
-      state.heroImage = result.heroImage;
       state.avatar = result.avatar;
-      applyCoverHeroToState(false).then(function () {
-        syncInputs();
-        render();
-      });
+      syncInputs();
+      render();
     }).catch(function (e) {
       errEl.textContent = e.message || '抓取失败';
       errEl.hidden = false;
@@ -1359,9 +1351,9 @@
     var hint = document.getElementById('fetchHint');
     if (!hint) return;
     if (location.protocol === 'file:') {
-      hint.innerHTML = '自动填充小组名称、成员数、头图和头像。请运行 <code>npm start</code>，通过 http://localhost:5174 打开，勿直接用 file:// 打开。';
+      hint.innerHTML = '自动填充小组名称、成员数和头像。请运行 <code>npm start</code>，通过 http://localhost:5174 打开，勿直接用 file:// 打开。';
     } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-      hint.textContent = '自动填充小组名称、成员数、头图和头像。当前为本地服务；若提示接口不存在，请重启终端里的 npm start。';
+      hint.textContent = '自动填充小组名称、成员数和头像。当前为本地服务；若提示接口不存在，请重启终端里的 npm start。';
     }
   })();
 
