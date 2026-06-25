@@ -144,9 +144,13 @@
     .poster-quote-img { display:block; width:100%; height:100%; object-fit:contain; filter: brightness(0) saturate(100%) invert(42%) sepia(8%) saturate(1200%) hue-rotate(358deg); }
     .poster-headline {
       position: absolute; z-index: 7; box-sizing: border-box;
-      display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
+      display: flex; justify-content: center; align-items: flex-start;
+      overflow: visible; height: auto; min-height: 100px;
     }
-    .poster-headline-text { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .poster-headline-text {
+      width: 100%; text-align: center; white-space: pre-wrap; word-break: break-word;
+      line-height: 80pt; overflow: visible;
+    }
 
     .panel-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
     .panel-section-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 14px; }
@@ -233,7 +237,7 @@
       </div>
       <div class="form-group">
         <label for="headline">主标题</label>
-        <input id="headline" type="text" placeholder="请输入主标题">
+        <textarea id="headline" rows="3" placeholder="请输入主标题，Enter 换行"></textarea>
       </div>
       <div class="form-group">
         <label>头图</label>
@@ -278,6 +282,13 @@
             <input id="gradientColor" type="text" value="#354659" placeholder="蒙层主色">
           </div>
           <button type="button" class="secondary-btn" id="sampleGradientBtn">从图片取色</button>
+        </div>
+        <div class="form-group">
+          <label>徽章底色</label>
+          <div class="color-row">
+            <input type="color" id="badgeColorPick" value="#5B9BBF">
+            <input id="badgeColor" type="text" value="#5B9BBF" placeholder="「豆瓣专题推荐」底色">
+          </div>
         </div>
         <div class="form-group">
           <label for="topicGroupUrls">关联小组链接（每行一个，1～5 个）</label>
@@ -373,7 +384,7 @@
       members: { x: 271, y: 1156, fontSize: 37, fontWeight: 400, opacity: 0.6 },
       tag: { x: 458, y: 1272, width: 326, height: 47, fontSize: 39, color: '#725940', lineWidth: 50, lineOffsetY: 27, textOffsetX: 86 },
       quote: { x: 535.5, y: 1426, width: 165, height: 114.88, opacity: 1 },
-      headline: { x: 150, y: 1581, width: 942, height: 100, fontSize: 68, fontWeight: 400, color: '#725940', lineHeight: 1.0 }
+      headline: { x: 150, y: 1581, width: 942, height: 100, fontSize: 68, fontWeight: 400, color: '#725940', lineHeight: 80 }
     },
     b: {
       frame: { width: 1242, height: 1863 },
@@ -385,7 +396,7 @@
       members: { x: 317, y: 995, fontSize: 37, fontWeight: 400, opacity: 0.6 },
       tag: { x: 458, y: 1105, width: 326, height: 47, fontSize: 39, color: '#725940', lineWidth: 50, lineOffsetY: 27, textOffsetX: 86 },
       quote: { x: 539, y: 1249, width: 165, height: 114.88, opacity: 1 },
-      headline: { x: 150, y: 1404, width: 942, height: 100, fontSize: 68, fontWeight: 400, color: '#725940', lineHeight: 1.0 }
+      headline: { x: 150, y: 1404, width: 942, height: 100, fontSize: 68, fontWeight: 400, color: '#725940', lineHeight: 80 }
     }
   };
 
@@ -421,6 +432,7 @@
     heroOffsetX: 50,
     heroOffsetY: 50,
     gradientColor: TopicPoster.DEFAULT_GRADIENT_COLOR,
+    badgeColor: TopicPoster.DEFAULT_BADGE_COLOR,
     heroTransformsBySize: {},
     groups: makePlaceholderGroups(3)
   };
@@ -557,7 +569,8 @@
         lineWidth: d.tag.lineWidth, lineOffsetY: d.tag.lineOffsetY, textOffsetX: d.tag.textOffsetX },
       quote: { left: d.quote.x, top: d.quote.y, width: d.quote.width, height: d.quote.height, opacity: d.quote.opacity },
       headline: { left: d.headline.x, top: d.headline.y, width: d.headline.width, height: d.headline.height,
-        fontSize: d.headline.fontSize, fontWeight: d.headline.fontWeight, color: d.headline.color, lineHeight: d.headline.lineHeight }
+        fontSize: d.headline.fontSize, fontWeight: d.headline.fontWeight, color: d.headline.color,
+        lineHeight: d.headline.lineHeight + 'pt' }
     };
   }
 
@@ -636,9 +649,10 @@
     card.appendChild(quoteWrap);
 
     var headline = el('div', 'poster-headline', {
-      left: hl.left + 'px', top: hl.top + 'px', width: hl.width + 'px', height: hl.height + 'px',
+      left: hl.left + 'px', top: hl.top + 'px', width: hl.width + 'px',
+      minHeight: hl.height + 'px',
       fontSize: hl.fontSize + 'px', fontWeight: String(hl.fontWeight),
-      lineHeight: String(hl.lineHeight), color: hl.color
+      lineHeight: hl.lineHeight, color: hl.color
     });
     headline.appendChild(el('span', 'poster-headline-text', null, escHtml(data.headline)));
     card.appendChild(headline);
@@ -764,6 +778,8 @@
     document.getElementById('topicTitle').value = topicState.title;
     document.getElementById('gradientColor').value = topicState.gradientColor;
     document.getElementById('gradientColorPick').value = topicState.gradientColor;
+    document.getElementById('badgeColor').value = topicState.badgeColor;
+    document.getElementById('badgeColorPick').value = topicState.badgeColor;
     updateTopicGroupCount();
   }
 
@@ -1283,6 +1299,7 @@
     });
   }
   bindGradientInput('gradientColor', 'gradientColorPick', 'gradientColor');
+  bindGradientInput('badgeColor', 'badgeColorPick', 'badgeColor');
   document.getElementById('sampleGradientBtn').addEventListener('click', function () {
     applySampledGradientFromHero()
       .then(function () { render(); })

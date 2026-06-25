@@ -53,6 +53,7 @@
   };
 
   var DEFAULT_GRADIENT_COLOR = '#354659';
+  var DEFAULT_BADGE_COLOR = '#5B9BBF';
 
   function hexToRgb(hex) {
     var h = String(hex || '').replace('#', '');
@@ -86,7 +87,11 @@
     };
   }
 
-  function buildBadge(badgeSpec) {
+  function resolveBadgeBackground(data, badgeSpec) {
+    return data.badgeColor || badgeSpec.bg || DEFAULT_BADGE_COLOR;
+  }
+
+  function buildBadge(badgeSpec, badgeBg) {
     var badge = el('div', 'topic-badge', {
       position: 'absolute',
       left: badgeSpec.left + 'px',
@@ -94,7 +99,7 @@
       width: badgeSpec.width + 'px',
       height: badgeSpec.height + 'px',
       borderRadius: badgeSpec.radius + 'px',
-      background: badgeSpec.bg,
+      background: badgeBg || badgeSpec.bg,
       zIndex: '3',
       display: 'flex',
       alignItems: 'center',
@@ -289,6 +294,7 @@
     var w = spec.frame.width;
     var h = spec.frame.height;
     var gradColor = data.gradientColor || data.gradientEnd || data.gradientStart || DEFAULT_GRADIENT_COLOR;
+    var badgeBg = resolveBadgeBackground(data, spec.badge);
 
     var card = el('div', 'poster-card topic-poster', {
       width: w + 'px',
@@ -321,7 +327,7 @@
       pointerEvents: 'none',
     }, buildGradientStyle(gradColor, spec))));
 
-    card.appendChild(buildBadge(spec.badge));
+    card.appendChild(buildBadge(spec.badge, badgeBg));
 
     var titleSpec = spec.title;
     card.appendChild(el('div', 'topic-title', {
@@ -438,6 +444,7 @@
     TOPIC_GRADIENT: TOPIC_GRADIENT,
     TOPIC_SIZES: TOPIC_SIZES,
     DEFAULT_GRADIENT_COLOR: DEFAULT_GRADIENT_COLOR,
+    DEFAULT_BADGE_COLOR: DEFAULT_BADGE_COLOR,
     buildTopicPoster: buildTopicPoster,
     buildGradientStyle: buildGradientStyle,
     sampleGradientFromImage: sampleGradientFromImage,
