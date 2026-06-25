@@ -10,6 +10,14 @@
 @font-face {
   font-family: 'Source Han Sans SC';
   font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('source-han-sans-sc-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Sans SC';
+  font-style: normal;
   font-weight: 600;
   font-display: block;
   src: url('source-han-sans-sc-600.woff2') format('woff2');
