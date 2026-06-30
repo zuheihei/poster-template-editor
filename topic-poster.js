@@ -18,7 +18,7 @@
       mask: { left: 0, top: 923, width: 1242, height: 1187 },
       gradient: TOPIC_GRADIENT,
       badge: { left: 475.5, top: 1179, width: 290, height: 73, radius: 8, bg: '#5B9BBF', fontSize: 42, paddingX: 19, paddingY: 7 },
-      title: { left: 31, top: 1271, width: 1179, height: 140, fontSize: 100, fontWeight: 600 },
+      title: { left: 31, top: 1271, width: 1179, height: 140, fontSize: 100, fontWeight: 500 },
       groups: { left: 31, top: 1430, width: 1179, minHeight: 220, gap: 18 },
     },
     /** 专题推荐 1242×1863 */
@@ -27,7 +27,7 @@
       mask: { left: 0, top: 676, width: 1242, height: 1187 },
       gradient: TOPIC_GRADIENT,
       badge: { left: 475.5, top: 998, width: 290, height: 73, radius: 8, bg: '#5B9BBF', fontSize: 42, paddingX: 19, paddingY: 7 },
-      title: { left: 31, top: 1090, width: 1179, height: 140, fontSize: 100, fontWeight: 600 },
+      title: { left: 31, top: 1090, width: 1179, height: 140, fontSize: 100, fontWeight: 500 },
       groups: { left: 31, top: 1249, width: 1179, minHeight: 220, gap: 18 },
     },
   };

@@ -19,6 +19,7 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.json': 'application/json; charset=utf-8',
   '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
 };
 
 const doubanMiddleware = createDoubanApiMiddleware();

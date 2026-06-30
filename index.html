@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>图文模板编辑器</title>
   <link rel="preload" href="/fonts/source-han-sans-sc-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/source-han-sans-sc-500.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/source-han-sans-sc-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/source-han-serif-sc-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/source-han-serif-sc-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/pacifico-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/fonts/poster-fonts.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,15 +119,62 @@
     .preview-heading { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
     .preview-hint { font-size: 13px; color: #888; margin-bottom: 28px; }
     .preview-grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+    #previewGridXiaobao { justify-content: flex-start; }
     .preview-item { display: flex; flex-direction: column; align-items: center; }
+    .xiaobao-gh-column { display: flex; flex-direction: column; align-items: flex-start; }
+    .xiaobao-gh-column .preview-item { align-items: flex-start; }
+    .xiaobao-gh-column > .preview-item { margin-top: var(--gh-gap, 21px); }
+    .xiaobao-gl-row { display: flex; flex-direction: row; align-items: flex-start; gap: var(--gl-gap, 29px); }
+    .xiaobao-gl-col { display: flex; flex-direction: column; align-items: flex-start; }
+    .xiaobao-lm-track {
+      display: flex; flex-direction: column; align-items: flex-start;
+      height: var(--g-scaler-height); flex-shrink: 0;
+    }
+    .xiaobao-lm-bottom {
+      margin-top: var(--lm-gap, 21px); flex: 1; min-height: 0;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start;
+    }
+    .xiaobao-m-block { position: relative; display: flex; flex-direction: column; align-items: flex-start; }
+    .xiaobao-m-block .preview-label {
+      position: absolute; bottom: 100%; left: 0; margin-bottom: 12px; white-space: nowrap;
+    }
+    .xiaobao-main-layout {
+      display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .xiaobao-left-stack {
+      display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .xiaobao-jn-col {
+      position: relative; display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .xiaobao-j-col--above-n {
+      position: absolute; left: 0; top: calc(-1 * var(--j-lift, 0px));
+    }
+    .xiaobao-h-top-row {
+      display: flex; flex-direction: row; align-items: flex-start; gap: var(--hk-gap, 27px);
+    }
+    .xiaobao-ef-row {
+      display: flex; flex-direction: row; align-items: flex-start; gap: var(--ef-gap, 41px);
+    }
+    .xiaobao-ef-row--below-h { margin-top: var(--he-gap, 57px); }
+    .xiaobao-hk-col { display: flex; flex-direction: column; align-items: flex-start; }
+    .xiaobao-kright-col {
+      display: flex; flex-direction: column; align-items: flex-start; gap: var(--ki-gap, 38px);
+    }
     .preview-label { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 12px; }
+    .preview-section-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px; }
+    .preview-label-row {
+      display: flex; flex-direction: row; align-items: baseline; gap: 6px; margin-bottom: 12px;
+    }
+    .preview-label-row .preview-section-label,
+    .preview-label-row .preview-label { margin-bottom: 0; }
     .preview-scaler { overflow: visible; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
     .preview-inner { transform-origin: top left; position: relative; overflow: visible; }
 
     /* Poster */
     .poster-card {
       position: relative; box-sizing: border-box; overflow: hidden; flex-shrink: 0;
-      font-family: 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
+      font-family: 'Source Han Sans SC', sans-serif;
     }
     .poster-bg { position: absolute; inset: 0; z-index: 0; }
     .poster-hero { position: absolute; z-index: 1; overflow: hidden; }
@@ -162,6 +213,12 @@
       border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; resize: vertical;
     }
     .form-group textarea:focus { border-color: #888580; }
+    .form-group textarea#xiaobaoTitle {
+      min-height: 0; height: 74px; line-height: 1.45;
+    }
+    .form-group textarea#xiaobaoTitle2 {
+      min-height: 0; height: 52px; line-height: 1.45;
+    }
     .color-row { display: flex; gap: 10px; align-items: center; }
     .color-row input[type='color'] { width: 42px; height: 36px; padding: 2px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
     .color-row input[type='text'] { flex: 1; min-width: 0; }
@@ -206,7 +263,31 @@
     .hero-editor-handle-ne { right: -9px; top: -9px; cursor: nesw-resize; }
     .hero-editor-handle-se { right: -9px; bottom: -9px; cursor: nwse-resize; }
     .hero-editor-handle-sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
-    .topic-hero-img, .poster-hero-img { touch-action: none; user-select: none; }
+    .topic-hero-img, .poster-hero-img, .xiaobao-splash-img { touch-action: none; user-select: none; }
+    .preview-inner .xiaobao-splash-img { cursor: pointer; }
+    .xiaobao-draggable-title { cursor: move; touch-action: none; user-select: none; }
+    .title-position-editor .title-position-box {
+      border: 3px solid #ea580c;
+      background: rgba(234, 88, 12, 0.1);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 0 5px rgba(234, 88, 12, 0.22);
+    }
+    .title-position-editor.is-active .title-position-box {
+      display: block;
+      pointer-events: auto;
+      cursor: grab;
+    }
+    .title-position-editor.is-active .title-position-box:active { cursor: grabbing; }
+    .title-position-editor .title-position-handle {
+      position: absolute; width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 3px solid #ea580c; pointer-events: none; z-index: 2;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+    .title-position-handle-nw { left: -8px; top: -8px; }
+    .title-position-handle-ne { right: -8px; top: -8px; }
+    .title-position-handle-se { right: -8px; bottom: -8px; }
+    .title-position-handle-sw { left: -8px; bottom: -8px; }
+    .inline-issue-row { display: flex; gap: 10px; align-items: center; }
+    .inline-issue-row input { flex: 1; min-width: 0; }
   </style>
 </head>
 <body>
@@ -215,8 +296,9 @@
       <h2 class="editor-title">图文模板编辑器</h2>
 
       <div class="editor-tabs" role="tablist">
-        <button type="button" class="editor-tab active" data-tab="group" role="tab" aria-selected="true">豆瓣小组推荐</button>
-        <button type="button" class="editor-tab" data-tab="topic" role="tab" aria-selected="false">豆瓣专题推荐</button>
+        <button type="button" class="editor-tab active" data-tab="group" role="tab" aria-selected="true">小组推荐</button>
+        <button type="button" class="editor-tab" data-tab="topic" role="tab" aria-selected="false">专题推荐</button>
+        <button type="button" class="editor-tab" data-tab="xiaobao" role="tab" aria-selected="false">小报</button>
       </div>
 
       <div class="tab-panel active" data-tab-panel="group" role="tabpanel">
@@ -320,20 +402,109 @@
         <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
         </div>
       </div>
+
+      <div class="tab-panel" data-tab-panel="xiaobao" role="tabpanel">
+        <div class="form-group">
+          <label for="xiaobaoTitle">标题一</label>
+          <textarea id="xiaobaoTitle" rows="3" placeholder="华山脚下收麦子，粒粒皆辛苦"></textarea>
+          <p class="fetch-hint">Enter 换行；用于除 1080×317 外的尺寸；预览中点击标题可拖拽移动</p>
+        </div>
+        <div class="form-group">
+          <label for="xiaobaoTitle2">标题二</label>
+          <textarea id="xiaobaoTitle2" rows="2" placeholder="我发现了幸福的组成公式"></textarea>
+          <p class="fetch-hint">Enter 换行；用于 1080×317，标题区域最宽 1019px；预览中可拖拽移动</p>
+        </div>
+        <div class="form-group">
+          <label>开屏图片</label>
+          <label class="upload-btn">上传开屏图<input type="file" id="xiaobaoSplashUpload" accept="image/*" hidden></label>
+        </div>
+        <div class="form-group">
+          <label>背景色</label>
+          <div class="color-row">
+            <input type="color" id="xiaobaoBgPick" value="#cff3ff">
+            <input id="xiaobaoBgColor" type="text" value="#cff3ff" placeholder="背景色组件">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>背景组件（Dou）颜色</label>
+          <div class="color-row">
+            <input type="color" id="xiaobaoDouPick" value="#98e2fb">
+            <input id="xiaobaoDouColor" type="text" value="#98e2fb" placeholder="Dou 水印色">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Banner / 按钮色（统一）</label>
+          <div class="color-row">
+            <input type="color" id="xiaobaoAccentPick" value="#47abdf">
+            <input id="xiaobaoAccentColor" type="text" value="#47abdf" placeholder="刊号、按钮、首页 Banner">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>刊号 / 期数</label>
+          <div class="inline-issue-row">
+            <input id="xiaobaoVol" type="text" value="VoL." placeholder="VoL." aria-label="刊号">
+            <input id="xiaobaoIssue" type="text" value="18" placeholder="18" aria-label="期数">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="xiaobaoDate">日期</label>
+          <input id="xiaobaoDate" type="text" value="2026/06/12" placeholder="2026/06/12">
+        </div>
+        <div class="form-group">
+          <label for="xiaobaoDateSub">更新说明</label>
+          <input id="xiaobaoDateSub" type="text" value="每周五更新" placeholder="每周五更新">
+        </div>
+        <div class="form-group">
+          <label for="xiaobaoYear">年份（开屏封面）</label>
+          <input id="xiaobaoYear" type="text" value="2026" placeholder="2026">
+        </div>
+        <div class="form-group">
+          <label for="xiaobaoCredit">图片来源</label>
+          <input id="xiaobaoCredit" type="text" value="Shah ོ" placeholder="Shah ོ">
+        </div>
+
+        <div class="export-section">
+          <p class="export-title">导出图片</p>
+          <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
+          <div class="form-group export-format-group">
+            <label>导出格式</label>
+            <div class="export-format-options" id="formatOptionsXiaobao">
+              <button type="button" class="export-format-btn" data-format="png">PNG</button>
+              <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
+              <button type="button" class="export-format-btn" data-format="gif">GIF</button>
+            </div>
+          </div>
+          <button type="button" class="export-btn" id="exportE">导出（1242×2688）</button>
+          <button type="button" class="export-btn" id="exportF">导出（1242×2588）</button>
+          <button type="button" class="export-btn" id="exportN">导出（1242×2208）</button>
+          <button type="button" class="export-btn" id="exportG">导出（690×390）</button>
+          <button type="button" class="export-btn" id="exportH">导出（1280×720）</button>
+          <button type="button" class="export-btn" id="exportI">导出（1080×317）</button>
+          <button type="button" class="export-btn" id="exportJ">导出（1125×1500）</button>
+          <button type="button" class="export-btn primary" id="exportAllXiaobao">一键导出</button>
+          <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
+        </div>
+      </div>
     </aside>
 
     <section class="preview-area">
       <div class="preview-panel active" data-preview-panel="group">
-        <h2 class="preview-heading">豆瓣小组推荐</h2>
+        <h2 class="preview-heading">小组推荐</h2>
         <p class="preview-hint">小组实时预览，基于 Figma 精确还原</p>
-        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；拖角落或滚轮缩放；按住 Shift 可单独调整当前尺寸</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；按住 Shift 水平/垂直平移；拖角落或滚轮缩放；各尺寸头图独立调整</p>
         <div class="preview-grid" id="previewGridGroup"></div>
       </div>
       <div class="preview-panel" data-preview-panel="topic">
-        <h2 class="preview-heading">豆瓣专题推荐</h2>
+        <h2 class="preview-heading">专题推荐</h2>
         <p class="preview-hint">专题实时预览，基于 Figma 精确还原</p>
-        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；拖角落或滚轮缩放；按住 Shift 可单独调整当前尺寸</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击头图出现选框，拖拽移动；按住 Shift 水平/垂直平移；拖角落或滚轮缩放；各尺寸头图独立调整</p>
         <div class="preview-grid" id="previewGridTopic"></div>
+      </div>
+      <div class="preview-panel" data-preview-panel="xiaobao">
+        <h2 class="preview-heading">豆瓣社区小报</h2>
+        <p class="preview-hint">小报实时预览，基于 Figma 精确还原</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击开屏图出现选框，拖拽移动；按住 Shift 水平/垂直平移；拖角落或滚轮缩放；各尺寸开屏图独立调整；点击标题可拖拽移动（Shift 锁定方向）</p>
+        <div class="preview-grid" id="previewGridXiaobao"></div>
       </div>
     </section>
 
@@ -344,6 +515,7 @@
   <script src="/vendor/html-to-image.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
   <script src="/topic-poster.js"></script>
+  <script src="/xiaobao-poster.js"></script>
   <script src="/hero-editor.js"></script>
   <script>
 (function () {
@@ -362,6 +534,8 @@
   var exportFormat = 'jpg';
   var activeTab = 'group';
   var exporting = false;
+  var exportImageCache = Object.create(null);
+  var BATCH_CAPTURE_CONCURRENCY = 2;
 
   var svgHero = '<svg xmlns="http://www.w3.org/2000/svg" width="1141" height="1128" viewBox="0 0 1141 1128">' +
     '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#c8b8a8"/><stop offset="100%" stop-color="#8a7560"/></linearGradient></defs>' +
@@ -440,22 +614,117 @@
     groups: makePlaceholderGroups(3)
   };
 
+  var xiaobaoState = {
+    title: '华山脚下收麦子，\n粒粒皆辛苦',
+    title2: '我发现了幸福的组成公式',
+    splashImage: XiaobaoPoster.ASSETS.defaultSplash,
+    bgColor: XiaobaoPoster.DEFAULT_BG,
+    douColor: XiaobaoPoster.DEFAULT_DOU,
+    accentColor: XiaobaoPoster.DEFAULT_ACCENT,
+    issueNumber: '18',
+    volLabel: 'VoL.',
+    date: '2026/06/12',
+    dateSubtitle: '每周五更新',
+    year: '2026',
+    photoCredit: 'Shah ོ',
+    heroScale: 100,
+    heroOffsetX: 50,
+    heroOffsetY: 50,
+    heroTransformsBySize: {},
+    titleTransformsBySize: {},
+  };
+
+  var undoStack = [];
+  var undoSuspended = false;
+  var MAX_UNDO = 80;
+
+  function snapshotAppState() {
+    return {
+      state: JSON.parse(JSON.stringify(state)),
+      topicState: JSON.parse(JSON.stringify(topicState)),
+      xiaobaoState: JSON.parse(JSON.stringify(xiaobaoState)),
+      activeTab: activeTab,
+      exportFormat: exportFormat,
+    };
+  }
+
+  function replaceStateObject(target, source) {
+    Object.keys(target).forEach(function (k) { delete target[k]; });
+    Object.keys(source).forEach(function (k) { target[k] = source[k]; });
+  }
+
+  function pushUndoSnapshot() {
+    if (undoSuspended) return;
+    undoStack.push(snapshotAppState());
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+  }
+
+  function restoreSnapshot(snap) {
+    undoSuspended = true;
+    replaceStateObject(state, snap.state);
+    replaceStateObject(topicState, snap.topicState);
+    replaceStateObject(xiaobaoState, snap.xiaobaoState);
+    activeTab = snap.activeTab;
+    exportFormat = snap.exportFormat;
+    syncInputs();
+    syncTopicInputs();
+    syncXiaobaoInputs();
+    syncExportFormat(exportFormat);
+    switchTab(activeTab);
+    syncHeroTransformToDom(false);
+    syncHeroTransformToDom(true);
+    syncXiaobaoHeroToDom();
+    syncXiaobaoTitleToDom();
+    render();
+    undoSuspended = false;
+  }
+
+  function undoLastChange() {
+    if (undoStack.length === 0) return;
+    restoreSnapshot(undoStack.pop());
+  }
+
+  function isNativeEditableTarget(el) {
+    if (!el) return false;
+    var tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+
   function applyCoverHeroToState(isTopic) {
     var src = isTopic ? topicState : state;
     if (!src.heroImage) return Promise.resolve();
     return new Promise(function (resolve) {
       var img = new Image();
       img.onload = function () {
-        var t = HeroEditor.computeCoverTransform(
-          img.naturalWidth,
-          img.naturalHeight,
-          1242,
-          2110
-        );
-        src.heroOffsetX = t.xPercent;
-        src.heroOffsetY = t.yPercent;
-        src.heroScale = t.scale;
         src.heroTransformsBySize = {};
+        if (isTopic) {
+          ['c', 'd'].forEach(function (key) {
+            var cfg = TopicPoster.TOPIC_SIZES[key];
+            src.heroTransformsBySize[key] = HeroEditor.computeCoverTransform(
+              img.naturalWidth,
+              img.naturalHeight,
+              cfg.width,
+              cfg.height
+            );
+          });
+        } else {
+          var cover = HeroEditor.computeCoverTransform(
+            img.naturalWidth,
+            img.naturalHeight,
+            1242,
+            2110
+          );
+          ['a', 'b'].forEach(function (key) {
+            src.heroTransformsBySize[key] = {
+              xPercent: cover.xPercent,
+              yPercent: cover.yPercent,
+              scale: cover.scale,
+            };
+          });
+        }
+        src.heroOffsetX = 50;
+        src.heroOffsetY = 33.3;
+        src.heroScale = 100;
         resolve();
       };
       img.onerror = function () { resolve(); };
@@ -471,26 +740,136 @@
     return applyCoverHeroToState(false);
   }
 
+  function applyCoverXiaobaoSplash() {
+    if (!xiaobaoState.splashImage) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        xiaobaoState.heroTransformsBySize = {};
+        XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
+          var splash = XiaobaoPoster.getSplashSpec(key);
+          if (!splash) return;
+          xiaobaoState.heroTransformsBySize[key] = HeroEditor.computeCoverTransform(
+            img.naturalWidth,
+            img.naturalHeight,
+            splash.width,
+            splash.height
+          );
+        });
+        xiaobaoState.heroOffsetX = 50;
+        xiaobaoState.heroOffsetY = 50;
+        xiaobaoState.heroScale = 100;
+        resolve();
+      };
+      img.onerror = function () { resolve(); };
+      img.src = xiaobaoState.splashImage;
+    });
+  }
+
   function getHeroTransformForKey(isTopic, key) {
     var src = isTopic ? topicState : state;
     return HeroEditor.resolveHeroTransform(src, key);
   }
 
+  function getXiaobaoHeroTransform(key) {
+    return HeroEditor.resolveHeroTransform(xiaobaoState, key);
+  }
+
+  function getXiaobaoTitlePosition(key) {
+    return XiaobaoPoster.resolveTitlePosition(xiaobaoState, key, XiaobaoPoster.XIAOBAO_FIGMA[key]);
+  }
+
+  function syncXiaobaoHeroToDom(onlyKey) {
+    XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var splash = XiaobaoPoster.getSplashSpec(key);
+      if (!splash) return;
+      var transform = getXiaobaoHeroTransform(key);
+      var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
+
+      var mount = document.querySelector('[data-variant-key="' + key + '"]');
+      if (mount) {
+        var img = mount.querySelector('.xiaobao-splash-img');
+        if (img) {
+          XiaobaoPoster.applySplashTransform(img, xiaobaoState, key, cfg.width, cfg.height);
+        }
+      }
+
+      var node = exportNodes[key];
+      if (!node) return;
+      var exportImg = node.querySelector('.xiaobao-splash-img');
+      if (exportImg) {
+        HeroEditor.applyHeroTransform(
+          exportImg,
+          splash.width,
+          splash.height,
+          transform,
+          null,
+          { bottomFade: false }
+        );
+      }
+    });
+
+    if (window.__heroEditorActive && window.__heroEditorActive.syncBox) {
+      window.__heroEditorActive.syncBox();
+    }
+  }
+
+  function syncXiaobaoTitleToDom(onlyKey) {
+    XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
+      if (!spec || !spec.title) return;
+      var pos = getXiaobaoTitlePosition(key);
+
+      var mount = document.querySelector('[data-variant-key="' + key + '"]');
+      if (mount) {
+        var titleEl = mount.querySelector('.xiaobao-draggable-title');
+        if (titleEl) {
+          titleEl.style.left = pos.left + 'px';
+          titleEl.style.top = pos.top + 'px';
+        }
+      }
+
+      var node = exportNodes[key];
+      if (!node) return;
+      var exportTitle = node.querySelector('.xiaobao-draggable-title');
+      if (exportTitle) {
+        exportTitle.style.left = pos.left + 'px';
+        exportTitle.style.top = pos.top + 'px';
+      }
+    });
+
+    if (window.__titleEditorActive && window.__titleEditorActive.syncBox) {
+      window.__titleEditorActive.syncBox();
+    }
+  }
+
+  function getGroupHeroContainer(key) {
+    var layout = layouts[key];
+    return { left: layout.hero.left, top: layout.hero.top };
+  }
+
+  function applyGroupHeroTransform(img, key, transform) {
+    var layout = layouts[key];
+    HeroEditor.applyHeroTransform(
+      img,
+      layout.width,
+      layout.height,
+      transform,
+      getGroupHeroContainer(key),
+      { bottomFade: false }
+    );
+  }
+
   function applyHeroTransformToCard(img, card, isTopic, key, transform) {
     if (!img || !card) return;
-    var fw = card.offsetWidth || parseInt(card.style.width, 10);
-    var fh = card.offsetHeight || parseInt(card.style.height, 10);
-    var container = null;
-    if (!isTopic) {
-      var heroEl = card.querySelector('.poster-hero');
-      if (heroEl) {
-        container = {
-          left: parseFloat(heroEl.style.left) || 0,
-          top: parseFloat(heroEl.style.top) || 0,
-        };
-      }
+    if (isTopic) {
+      var cfg = TopicPoster.TOPIC_SIZES[key];
+      HeroEditor.applyHeroTransform(img, cfg.width, cfg.height, transform, null, { bottomFade: true });
+      return;
     }
-    HeroEditor.applyHeroTransform(img, fw, fh, transform, container, { bottomFade: isTopic });
+    applyGroupHeroTransform(img, key, transform);
   }
 
   function syncHeroTransformToDom(isTopic, onlyKey) {
@@ -514,11 +893,7 @@
         var cfg = TopicPoster.TOPIC_SIZES[key];
         HeroEditor.applyHeroTransform(exportImg, cfg.width, cfg.height, transform, null, { bottomFade: true });
       } else {
-        var layout = layouts[key];
-        HeroEditor.applyHeroTransform(exportImg, layout.width, layout.height, transform, {
-          left: layout.hero.left,
-          top: layout.hero.top,
-        }, { bottomFade: false });
+        applyGroupHeroTransform(exportImg, key, transform);
       }
     });
 
@@ -527,35 +902,68 @@
     }
   }
 
-  function attachPreviewHeroEditor(card, inner, img, frameWidth, frameHeight, previewScale, heroContainer, variantKey) {
+  function attachXiaobaoPreviewEditors(card, inner, key, scale) {
+    var splash = XiaobaoPoster.getSplashSpec(key);
+    var splashImg = card.querySelector('.xiaobao-splash-img');
+    if (splashImg && splash) {
+      HeroEditor.attachHeroEditor(inner, splashImg, {
+        previewScale: scale,
+        frameWidth: splash.width,
+        frameHeight: splash.height,
+        useDomBounds: true,
+        getTransform: function () { return getXiaobaoHeroTransform(key); },
+        setTransform: function (t) {
+          if (!xiaobaoState.heroTransformsBySize) xiaobaoState.heroTransformsBySize = {};
+          xiaobaoState.heroTransformsBySize[key] = {
+            xPercent: t.xPercent,
+            yPercent: t.yPercent,
+            scale: t.scale,
+          };
+          syncXiaobaoHeroToDom(key);
+        },
+        onChange: function () { syncXiaobaoHeroToDom(key); },
+        onInteractionStart: pushUndoSnapshot,
+      });
+    }
+
+    var titleEl = card.querySelector('.xiaobao-draggable-title');
+    if (titleEl) {
+      HeroEditor.attachPositionEditor(inner, titleEl, {
+        previewScale: scale,
+        getPosition: function () { return getXiaobaoTitlePosition(key); },
+        setPosition: function (pos) {
+          if (!xiaobaoState.titleTransformsBySize) xiaobaoState.titleTransformsBySize = {};
+          xiaobaoState.titleTransformsBySize[key] = { left: pos.left, top: pos.top };
+          syncXiaobaoTitleToDom(key);
+        },
+        onChange: function () { syncXiaobaoTitleToDom(key); },
+        onInteractionStart: pushUndoSnapshot,
+      });
+    }
+  }
+
+  function attachPreviewHeroEditor(card, inner, img, frameWidth, frameHeight, previewScale, variantKey) {
     var isTopic = card.classList.contains('topic-poster');
     HeroEditor.attachHeroEditor(inner, img, {
       previewScale: previewScale,
       frameWidth: frameWidth,
       frameHeight: frameHeight,
-      container: heroContainer,
+      useDomBounds: true,
       getTransform: function () {
         return getHeroTransformForKey(isTopic, variantKey);
       },
-      setTransform: function (t, meta) {
-        meta = meta || {};
+      setTransform: function (t) {
         var src = isTopic ? topicState : state;
-        if (meta.independent && variantKey) {
-          if (!src.heroTransformsBySize) src.heroTransformsBySize = {};
-          src.heroTransformsBySize[variantKey] = {
-            xPercent: t.xPercent,
-            yPercent: t.yPercent,
-            scale: t.scale,
-          };
-          syncHeroTransformToDom(isTopic, variantKey);
-          return;
-        }
-        src.heroOffsetX = t.xPercent;
-        src.heroOffsetY = t.yPercent;
-        src.heroScale = t.scale;
-        src.heroTransformsBySize = {};
-        syncHeroTransformToDom(isTopic);
+        if (!src.heroTransformsBySize) src.heroTransformsBySize = {};
+        src.heroTransformsBySize[variantKey] = {
+          xPercent: t.xPercent,
+          yPercent: t.yPercent,
+          scale: t.scale,
+        };
+        syncHeroTransformToDom(isTopic, variantKey);
       },
+      onChange: function () { syncHeroTransformToDom(isTopic, variantKey); },
+      onInteractionStart: pushUndoSnapshot,
     });
   }
 
@@ -667,7 +1075,7 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  var exportNodes = { a: null, b: null, c: null, d: null };
+  var exportNodes = { a: null, b: null, c: null, d: null, e: null, f: null, n: null, g: null, h: null, i: null, j: null, k: null, l: null, m: null };
 
   function updateTopicGroupCount() {
     var el = document.getElementById('topicGroupCount');
@@ -699,10 +1107,7 @@
       var previewCard = inner.querySelector('.poster-card');
       var previewImg = previewCard && previewCard.querySelector('.poster-hero-img');
       if (previewCard && previewImg) {
-        attachPreviewHeroEditor(previewCard, inner, previewImg, layout.width, layout.height, scale, {
-          left: layout.hero.left,
-          top: layout.hero.top,
-        }, key);
+        attachPreviewHeroEditor(previewCard, inner, previewImg, layout.width, layout.height, scale, key);
       }
 
       exportNodes[key] = buildPoster(layout, state, bg, key);
@@ -731,10 +1136,159 @@
       var previewCard = inner.querySelector('.topic-poster');
       var previewImg = previewCard && previewCard.querySelector('.topic-hero-img');
       if (previewCard && previewImg) {
-        attachPreviewHeroEditor(previewCard, inner, previewImg, cfg.width, cfg.height, scale, null, key);
+        attachPreviewHeroEditor(previewCard, inner, previewImg, cfg.width, cfg.height, scale, key);
       }
 
       exportNodes[key] = TopicPoster.buildTopicPoster(key, topicState);
+    });
+  }
+
+  function buildXiaobaoPreviewScaler(key) {
+    var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
+    var scale = cfg.scale;
+    var scaler = el('div', 'preview-scaler', { width: cfg.width * scale + 'px', height: cfg.height * scale + 'px' });
+    var inner = el('div', 'preview-inner', {
+      transform: 'scale(' + scale + ')',
+      width: cfg.width + 'px',
+      height: cfg.height + 'px',
+    });
+    inner.dataset.variantKey = key;
+    inner.appendChild(XiaobaoPoster.buildXiaobaoPoster(key, xiaobaoState));
+    scaler.appendChild(inner);
+    var previewCard = inner.querySelector('.xiaobao-poster');
+    if (previewCard) {
+      attachXiaobaoPreviewEditors(previewCard, inner, key, scale);
+    }
+    exportNodes[key] = XiaobaoPoster.buildXiaobaoPoster(key, xiaobaoState);
+    return scaler;
+  }
+
+  function renderXiaobaoMainLayout(parent) {
+    var gScale = XiaobaoPoster.XIAOBAO_SIZES.g.scale;
+    var hScale = XiaobaoPoster.XIAOBAO_SIZES.h.scale;
+    var eScale = XiaobaoPoster.XIAOBAO_SIZES.e.scale;
+    var gCfg = XiaobaoPoster.XIAOBAO_SIZES.g;
+    var lCfg = XiaobaoPoster.XIAOBAO_SIZES.l;
+    var mCfg = XiaobaoPoster.XIAOBAO_SIZES.m;
+    var hCfg = XiaobaoPoster.XIAOBAO_SIZES.h;
+    var eCfg = XiaobaoPoster.XIAOBAO_SIZES.e;
+    var fCfg = XiaobaoPoster.XIAOBAO_SIZES.f;
+    var nCfg = XiaobaoPoster.XIAOBAO_SIZES.n;
+    var jCfg = XiaobaoPoster.XIAOBAO_SIZES.j;
+    var kCfg = XiaobaoPoster.XIAOBAO_SIZES.k;
+    var iCfg = XiaobaoPoster.XIAOBAO_SIZES.i;
+
+    var layout = el('div', 'xiaobao-main-layout');
+    layout.style.setProperty('--gh-gap', (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale) + 'px');
+    layout.style.setProperty('--gl-gap', (XiaobaoPoster.PREVIEW_ROW_GL.gap * gScale) + 'px');
+    layout.style.setProperty('--lm-gap', (XiaobaoPoster.PREVIEW_STACK_LM.gap * gScale) + 'px');
+    layout.style.setProperty('--g-scaler-height', (gCfg.height * gScale) + 'px');
+    layout.style.setProperty('--hk-gap', (XiaobaoPoster.PREVIEW_ROW_HK.gap * hScale) + 'px');
+    layout.style.setProperty('--ki-gap', (XiaobaoPoster.PREVIEW_STACK_KI.gap * hScale) + 'px');
+    layout.style.setProperty('--he-gap', (XiaobaoPoster.PREVIEW_STACK_HE.gap * hScale) + 'px');
+    layout.style.setProperty('--ef-gap', (XiaobaoPoster.PREVIEW_ROW_EF.gap * eScale) + 'px');
+    var previewLabelH = 25;
+    var jLift = (gCfg.height * gScale) + previewLabelH
+      + (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale)
+      + (hCfg.height * hScale) + previewLabelH
+      + (XiaobaoPoster.PREVIEW_STACK_HE.gap * hScale);
+    layout.style.setProperty('--j-lift', jLift + 'px');
+
+    var leftStack = el('div', 'xiaobao-left-stack');
+
+    var glRow = el('div', 'xiaobao-gl-row');
+    glRow.style.setProperty('--gl-gap', (XiaobaoPoster.PREVIEW_ROW_GL.gap * gScale) + 'px');
+    glRow.style.setProperty('--lm-gap', (XiaobaoPoster.PREVIEW_STACK_LM.gap * gScale) + 'px');
+    var gCol = el('div', 'xiaobao-gl-col');
+    gCol.appendChild(el('p', 'preview-label', null, gCfg.label));
+    gCol.appendChild(buildXiaobaoPreviewScaler('g'));
+    glRow.appendChild(gCol);
+
+    var lmCol = el('div', 'xiaobao-gl-col xiaobao-lm-col');
+    lmCol.appendChild(el('p', 'preview-label', null, lCfg.label));
+    var lmTrack = el('div', 'xiaobao-lm-track');
+    lmTrack.appendChild(buildXiaobaoPreviewScaler('l'));
+    var mWrap = el('div', 'xiaobao-lm-bottom');
+    var mBlock = el('div', 'xiaobao-m-block');
+    mBlock.appendChild(el('p', 'preview-label', null, mCfg.label));
+    mBlock.appendChild(buildXiaobaoPreviewScaler('m'));
+    mWrap.appendChild(mBlock);
+    lmTrack.appendChild(mWrap);
+    lmCol.appendChild(lmTrack);
+    glRow.appendChild(lmCol);
+    leftStack.appendChild(glRow);
+
+    var hkTopRow = el('div', 'xiaobao-h-top-row');
+    var hCol = el('div', 'xiaobao-hk-col');
+    hCol.appendChild(el('p', 'preview-label', null, hCfg.label));
+    hCol.appendChild(buildXiaobaoPreviewScaler('h'));
+    hkTopRow.appendChild(hCol);
+
+    var kiCol = el('div', 'xiaobao-kright-col');
+    var kCol = el('div', 'xiaobao-hk-col');
+    var kLabelRow = el('div', 'preview-label-row');
+    kLabelRow.appendChild(el('span', 'preview-section-label', null, '首页banner'));
+    kLabelRow.appendChild(el('span', 'preview-label', null, kCfg.label));
+    kCol.appendChild(kLabelRow);
+    kCol.appendChild(buildXiaobaoPreviewScaler('k'));
+    kiCol.appendChild(kCol);
+
+    var iCol = el('div', 'xiaobao-hk-col');
+    iCol.appendChild(el('p', 'preview-label', null, iCfg.label));
+    iCol.appendChild(buildXiaobaoPreviewScaler('i'));
+    kiCol.appendChild(iCol);
+    hkTopRow.appendChild(kiCol);
+    hkTopRow.style.marginTop = (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale) + 'px';
+    leftStack.appendChild(hkTopRow);
+
+    var efRow = el('div', 'xiaobao-ef-row xiaobao-ef-row--below-h');
+    var eCol = el('div', 'xiaobao-hk-col');
+    eCol.appendChild(el('p', 'preview-label', null, eCfg.label));
+    eCol.appendChild(buildXiaobaoPreviewScaler('e'));
+    efRow.appendChild(eCol);
+    var fCol = el('div', 'xiaobao-hk-col');
+    fCol.appendChild(el('p', 'preview-label', null, fCfg.label));
+    fCol.appendChild(buildXiaobaoPreviewScaler('f'));
+    efRow.appendChild(fCol);
+    var jnCol = el('div', 'xiaobao-jn-col');
+    var nCol = el('div', 'xiaobao-hk-col');
+    nCol.appendChild(el('p', 'preview-label', null, nCfg.label));
+    nCol.appendChild(buildXiaobaoPreviewScaler('n'));
+    jnCol.appendChild(nCol);
+    var jCol = el('div', 'xiaobao-hk-col xiaobao-j-col--above-n');
+    jCol.appendChild(el('p', 'preview-label', null, jCfg.label));
+    jCol.appendChild(buildXiaobaoPreviewScaler('j'));
+    jnCol.appendChild(jCol);
+    efRow.appendChild(jnCol);
+    leftStack.appendChild(efRow);
+
+    layout.appendChild(leftStack);
+
+    parent.appendChild(layout);
+  }
+
+  function appendXiaobaoPreviewItem(parent, key) {
+    var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
+    var item = el('div', 'preview-item');
+    item.appendChild(el('p', 'preview-label', null, cfg.label));
+    item.appendChild(buildXiaobaoPreviewScaler(key));
+    parent.appendChild(item);
+  }
+
+  function renderXiaobaoPreview(grid) {
+    grid.innerHTML = '';
+    var ghColumn = el('div', 'xiaobao-gh-column');
+    var gScale = XiaobaoPoster.XIAOBAO_SIZES.g.scale;
+    ghColumn.style.setProperty('--gh-gap', (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale) + 'px');
+    renderXiaobaoMainLayout(ghColumn);
+    grid.appendChild(ghColumn);
+    XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
+      if (key === 'g' || key === 'h' || key === 'e' || key === 'f' || key === 'n' || key === 'j' || key === 'l' || key === 'm' || key === 'k' || key === 'i') return;
+      appendXiaobaoPreviewItem(grid, key);
+    });
+    XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
+      if (XiaobaoPoster.PREVIEW_KEYS.indexOf(key) >= 0) return;
+      exportNodes[key] = XiaobaoPoster.buildXiaobaoPoster(key, xiaobaoState);
     });
   }
 
@@ -743,7 +1297,8 @@
     layer.innerHTML = '';
     renderGroupPreview(document.getElementById('previewGridGroup'));
     renderTopicPreview(document.getElementById('previewGridTopic'));
-    ['a', 'b', 'c', 'd'].forEach(function (key) {
+    renderXiaobaoPreview(document.getElementById('previewGridXiaobao'));
+    ['a', 'b', 'c', 'd'].concat(XiaobaoPoster.EXPORT_KEYS).forEach(function (key) {
       if (exportNodes[key]) layer.appendChild(exportNodes[key]);
     });
     updateTopicGroupCount();
@@ -786,13 +1341,35 @@
     updateTopicGroupCount();
   }
 
+  function syncXiaobaoInputs() {
+    document.getElementById('xiaobaoTitle').value = xiaobaoState.title;
+    document.getElementById('xiaobaoTitle2').value = xiaobaoState.title2;
+    document.getElementById('xiaobaoBgColor').value = xiaobaoState.bgColor;
+    document.getElementById('xiaobaoBgPick').value = xiaobaoState.bgColor;
+    document.getElementById('xiaobaoDouColor').value = xiaobaoState.douColor;
+    document.getElementById('xiaobaoDouPick').value = xiaobaoState.douColor;
+    document.getElementById('xiaobaoAccentColor').value = xiaobaoState.accentColor;
+    document.getElementById('xiaobaoAccentPick').value = xiaobaoState.accentColor;
+    document.getElementById('xiaobaoIssue').value = xiaobaoState.issueNumber;
+    document.getElementById('xiaobaoVol').value = xiaobaoState.volLabel;
+    document.getElementById('xiaobaoDate').value = xiaobaoState.date;
+    document.getElementById('xiaobaoDateSub').value = xiaobaoState.dateSubtitle;
+    document.getElementById('xiaobaoYear').value = xiaobaoState.year;
+    document.getElementById('xiaobaoCredit').value = xiaobaoState.photoCredit;
+  }
+
   var POSTER_FONT_FAMILY = 'Source Han Sans SC';
 
   function ensurePosterFontsReady() {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
     return Promise.all([
       document.fonts.load('400 32px "' + POSTER_FONT_FAMILY + '"'),
+      document.fonts.load('500 32px "' + POSTER_FONT_FAMILY + '"'),
       document.fonts.load('600 32px "' + POSTER_FONT_FAMILY + '"'),
+      document.fonts.load('700 32px "' + POSTER_FONT_FAMILY + '"'),
+      document.fonts.load('400 32px "Source Han Serif SC"'),
+      document.fonts.load('500 32px "Source Han Serif SC"'),
+      document.fonts.load('400 32px "Pacifico"'),
     ]).then(function () {
       return document.fonts.ready;
     }).catch(function () { /* 字体加载失败时仍尝试导出 */ });
@@ -817,27 +1394,100 @@
     });
   }
 
+  function mountExportNode(node) {
+    var layer = document.getElementById('exportLayer');
+    if (node && layer && !layer.contains(node)) layer.appendChild(node);
+  }
+
+  function refreshXiaobaoExportNode(key) {
+    exportNodes[key] = XiaobaoPoster.buildXiaobaoPoster(key, xiaobaoState);
+    syncXiaobaoHeroToDom(key);
+    syncXiaobaoTitleToDom(key);
+    mountExportNode(exportNodes[key]);
+  }
+
+  function refreshXiaobaoExportNodes(keys) {
+    (keys || XiaobaoPoster.EXPORT_KEYS).forEach(function (key) {
+      refreshXiaobaoExportNode(key);
+    });
+  }
+
+  function isLocalAssetUrl(url) {
+    if (!url || url.indexOf('data:') === 0) return true;
+    if (url.indexOf('/xiaobao/') === 0 || url.indexOf('/vendor/') === 0) return true;
+    if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0 && url.indexOf('//') !== 0) return true;
+    try {
+      return new URL(url, window.location.href).origin === window.location.origin;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function urlToDataUrl(url) {
     if (!url || url.indexOf('data:') === 0) return Promise.resolve(url);
-    return fetch('/api/douban/image?url=' + encodeURIComponent(url))
-      .then(function (res) {
-        if (!res.ok) throw new Error('图片无法用于导出，请重新抓取或本地上传头图');
-        return res.blob();
-      })
-      .then(blobToDataUrl);
+    if (exportImageCache[url]) return Promise.resolve(exportImageCache[url]);
+    var promise;
+    if (isLocalAssetUrl(url)) {
+      var fetchUrl = url.indexOf('http://') === 0 || url.indexOf('https://') === 0 || url.indexOf('//') === 0
+        ? url
+        : new URL(url, window.location.origin).href;
+      promise = fetch(fetchUrl)
+        .then(function (res) {
+          if (!res.ok) throw new Error('图片无法加载：' + url);
+          return res.blob();
+        })
+        .then(blobToDataUrl);
+    } else {
+      promise = fetch('/api/douban/image?url=' + encodeURIComponent(url))
+        .then(function (res) {
+          if (!res.ok) throw new Error('图片无法用于导出，请重新抓取或本地上传头图');
+          return res.blob();
+        })
+        .then(blobToDataUrl);
+    }
+    return promise.then(function (dataUrl) {
+      exportImageCache[url] = dataUrl;
+      return dataUrl;
+    });
   }
 
   function ensureExportableImages(node) {
-    return Promise.all(Array.from(node.querySelectorAll('img')).map(function (img) {
-      return urlToDataUrl(img.getAttribute('src') || img.src).then(function (dataUrl) {
-        img.removeAttribute('crossorigin');
-        img.src = dataUrl;
-        return new Promise(function (resolve) {
-          if (img.complete) resolve();
-          else { img.onload = resolve; img.onerror = resolve; }
+    return ensureExportableImagesBatch([node]);
+  }
+
+  function ensureExportableImagesBatch(nodes) {
+    var urlSet = Object.create(null);
+    nodes.forEach(function (node) {
+      Array.from(node.querySelectorAll('img')).forEach(function (img) {
+        var url = img.getAttribute('src') || img.src;
+        if (url) urlSet[url] = true;
+      });
+    });
+    var urls = Object.keys(urlSet);
+    return Promise.all(urls.map(function (url) {
+      return urlToDataUrl(url).then(function (dataUrl) {
+        return { url: url, dataUrl: dataUrl };
+      });
+    })).then(function (resolved) {
+      var map = Object.create(null);
+      resolved.forEach(function (item) { map[item.url] = item.dataUrl; });
+      nodes.forEach(function (node) {
+        Array.from(node.querySelectorAll('img')).forEach(function (img) {
+          var url = img.getAttribute('src') || img.src;
+          if (map[url]) {
+            img.removeAttribute('crossorigin');
+            img.src = map[url];
+          }
         });
       });
-    }));
+      return Promise.all(nodes.map(waitForImages));
+    });
+  }
+
+  function prepareExportBatch(nodes) {
+    return ensurePosterFontsReady().then(function () {
+      return ensureExportableImagesBatch(nodes);
+    });
   }
 
   function assertExportReady() {
@@ -882,28 +1532,40 @@
     });
   }
 
-  function fitJpegUnderLimit(pngDataUrl, maxBytes) {
-    function attempt(scaleIndex, qualityIndex, png) {
-      var scale = JPEG_SCALES[scaleIndex];
-      var prep = png
-        ? Promise.resolve(png)
-        : scale === 1
-          ? Promise.resolve(pngDataUrl)
-          : resizePngDataUrl(pngDataUrl, scale);
-      return prep.then(function (currentPng) {
-        if (qualityIndex >= JPEG_QUALITIES.length) {
-          if (scaleIndex + 1 >= JPEG_SCALES.length) {
-            return pngDataUrlToJpeg(currentPng, JPEG_QUALITIES[JPEG_QUALITIES.length - 1], JPEG_BG);
-          }
-          return attempt(scaleIndex + 1, 0, null);
+  function binarySearchJpegQuality(pngDataUrl, maxBytes, low, high) {
+    return pngDataUrlToJpeg(pngDataUrl, high, JPEG_BG).then(function (best) {
+      if (getDataUrlByteSize(best) <= maxBytes) return best;
+      function step(lo, hi, fallback) {
+        if (hi - lo < 0.05) {
+          return fallback && getDataUrlByteSize(fallback) <= maxBytes
+            ? fallback
+            : pngDataUrlToJpeg(pngDataUrl, lo, JPEG_BG);
         }
-        return pngDataUrlToJpeg(currentPng, JPEG_QUALITIES[qualityIndex], JPEG_BG).then(function (jpg) {
+        var mid = (lo + hi) / 2;
+        return pngDataUrlToJpeg(pngDataUrl, mid, JPEG_BG).then(function (jpg) {
+          if (getDataUrlByteSize(jpg) <= maxBytes) return step(mid, hi, jpg);
+          return step(lo, mid, fallback);
+        });
+      }
+      return step(low, high, null);
+    });
+  }
+
+  function fitJpegUnderLimit(pngDataUrl, maxBytes) {
+    function attemptScale(scaleIndex) {
+      var scale = JPEG_SCALES[scaleIndex];
+      var prep = scale === 1
+        ? Promise.resolve(pngDataUrl)
+        : resizePngDataUrl(pngDataUrl, scale);
+      return prep.then(function (currentPng) {
+        return binarySearchJpegQuality(currentPng, maxBytes, 0.32, 0.85).then(function (jpg) {
           if (getDataUrlByteSize(jpg) <= maxBytes) return jpg;
-          return attempt(scaleIndex, qualityIndex + 1, currentPng);
+          if (scaleIndex + 1 >= JPEG_SCALES.length) return jpg;
+          return attemptScale(scaleIndex + 1);
         });
       });
     }
-    return attempt(0, 0, null);
+    return attemptScale(0);
   }
 
   function fitPngUnderLimit(pngDataUrl, maxBytes) {
@@ -1039,6 +1701,7 @@
   function resetExportState() {
     exporting = false;
     setExportDisabled(false);
+    resetBatchExportButtons();
     var fetchBtn = document.getElementById('fetchBtn');
     var fetchTopicBtn = document.getElementById('fetchTopicGroupsBtn');
     if (fetchBtn) fetchBtn.disabled = false;
@@ -1082,6 +1745,19 @@
         });
       });
     }
+    if (format === 'jpg' && htmlToImage.toJpeg) {
+      var jpegOpts = Object.assign({}, opts, { quality: 0.78, backgroundColor: JPEG_BG });
+      return htmlToImage.toJpeg(node, jpegOpts).then(function (jpgUrl) {
+        if (getDataUrlByteSize(jpgUrl) <= MAX_JPEG_BYTES) {
+          return { dataUrl: jpgUrl, format: 'jpg' };
+        }
+        return htmlToImage.toPng(node, opts).then(function (pngUrl) {
+          return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES).then(function (jpg) {
+            return { dataUrl: jpg, format: 'jpg' };
+          });
+        });
+      });
+    }
     return htmlToImage.toPng(node, opts).then(function (pngUrl) {
       if (format === 'jpg') {
         return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES).then(function (jpg) {
@@ -1093,11 +1769,25 @@
   }
 
   function prepareAndExport(node, width, height, format) {
-    return ensurePosterFontsReady().then(function () {
-      return ensureExportableImages(node);
-    }).then(function () {
+    return prepareExportBatch([node]).then(function () {
       return capturePosterDataUrl(node, width, height, format);
     });
+  }
+
+  function mapWithConcurrency(items, limit, fn) {
+    var results = new Array(items.length);
+    var nextIndex = 0;
+    function worker() {
+      if (nextIndex >= items.length) return Promise.resolve();
+      var i = nextIndex++;
+      return fn(items[i], i).then(function (result) {
+        results[i] = result;
+        return worker();
+      });
+    }
+    var workers = [];
+    for (var w = 0; w < Math.min(limit, items.length); w++) workers.push(worker());
+    return Promise.all(workers).then(function () { return results; });
   }
 
   function downloadExportResult(result, exportName, requestedFormat) {
@@ -1110,9 +1800,15 @@
 
   function exportPoster(key) {
     if (exporting) return;
+    if (XiaobaoPoster.EXPORT_KEYS.indexOf(key) >= 0) {
+      refreshXiaobaoExportNode(key);
+    }
     var node = exportNodes[key];
-    var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
-    if (!node || !cfg) return;
+    var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
+    if (!node || !cfg) {
+      alert('暂无法导出该尺寸，请刷新页面后重试');
+      return;
+    }
     if ((key === 'c' || key === 'd') && topicState.groups.length < TopicPoster.MIN_GROUPS) {
       alert('专题海报至少需要 ' + TopicPoster.MIN_GROUPS + ' 个小组');
       return;
@@ -1129,12 +1825,34 @@
       .finally(function () { resetExportState(); });
   }
 
-  function exportAllKeys(keys) {
+  function setBatchExportProgress(btnId, current, total) {
+    var btn = btnId && document.getElementById(btnId);
+    if (!btn) return;
+    if (!btn.dataset.defaultLabel) btn.dataset.defaultLabel = btn.textContent;
+    btn.textContent = (total && current != null)
+      ? ('导出中 ' + current + '/' + total + '…')
+      : btn.dataset.defaultLabel;
+  }
+
+  function resetBatchExportButtons() {
+    ['exportAllGroup', 'exportAllTopic', 'exportAllXiaobao'].forEach(function (id) {
+      setBatchExportProgress(id, 0, 0);
+    });
+  }
+
+  function exportAllKeys(keys, progressBtnId) {
     if (exporting) return;
+    exportImageCache = Object.create(null);
+    var isXiaobaoBatch = keys.some(function (key) { return XiaobaoPoster.EXPORT_KEYS.indexOf(key) >= 0; });
+    if (isXiaobaoBatch) {
+      refreshXiaobaoExportNodes(keys.filter(function (key) {
+        return XiaobaoPoster.EXPORT_KEYS.indexOf(key) >= 0;
+      }));
+    }
     var validKeys = keys.filter(function (key) {
       if ((key === 'c' || key === 'd') && topicState.groups.length < TopicPoster.MIN_GROUPS) return false;
       var node = exportNodes[key];
-      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
+      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
       return !!(node && cfg);
     });
     if (!validKeys.length) {
@@ -1145,21 +1863,31 @@
     }
     exporting = true;
     setExportDisabled(true);
+    var total = validKeys.length;
+    var completed = 0;
+    setBatchExportProgress(progressBtnId, 0, total);
     var safetyTimer = setTimeout(function () {
       alert('导出耗时较长，已恢复按钮，请重试');
       resetExportState();
-    }, 90000);
+    }, 180000);
 
-    Promise.all(validKeys.map(function (key) {
-      var node = exportNodes[key];
-      var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key];
-      return prepareAndExport(node, cfg.width, cfg.height, exportFormat).then(function (result) {
-        return { cfg: cfg, result: result };
+    var nodes = validKeys.map(function (key) { return exportNodes[key]; });
+    prepareExportBatch(nodes).then(function () {
+      return mapWithConcurrency(validKeys, BATCH_CAPTURE_CONCURRENCY, function (key) {
+        var node = exportNodes[key];
+        var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
+        return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat).then(function (result) {
+          completed += 1;
+          setBatchExportProgress(progressBtnId, completed, total);
+          return { cfg: cfg, result: result };
+        });
       });
-    }))
+    })
       .then(function (results) {
         var isTopic = validKeys.some(function (key) { return key === 'c' || key === 'd'; });
-        var zipName = (isTopic ? 'topic-posters' : 'group-posters') + '-' + exportFormat + '.zip';
+        var isXiaobao = validKeys.some(function (key) { return XiaobaoPoster.EXPORT_KEYS.indexOf(key) >= 0; });
+        var zipName = isXiaobao ? 'xiaobao-posters' : (isTopic ? 'topic-posters' : 'group-posters');
+        zipName += '-' + exportFormat + '.zip';
         return downloadAllExportResults(results, exportFormat, zipName);
       })
       .catch(function (e) { alert(e.message || '打包下载失败，请稍后重试'); console.error(e); })
@@ -1170,7 +1898,8 @@
   }
 
   function setExportDisabled(disabled) {
-    ['exportA','exportB','exportC','exportD','exportAllGroup','exportAllTopic'].forEach(function (id) {
+    ['exportA','exportB','exportC','exportD','exportAllGroup','exportAllTopic',
+      'exportE','exportF','exportN','exportG','exportH','exportI','exportJ','exportAllXiaobao'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.disabled = disabled;
     });
@@ -1256,27 +1985,45 @@
   }
 
   /* ── 事件绑定 ── */
+  document.addEventListener('keydown', function (e) {
+    var mod = e.metaKey || e.ctrlKey;
+    if (!mod || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+    if (isNativeEditableTarget(e.target)) return;
+    if (undoStack.length === 0) return;
+    e.preventDefault();
+    undoLastChange();
+  });
+
   document.getElementById('groupName').addEventListener('input', function (e) {
+    pushUndoSnapshot();
     state.groupName = e.target.value; render();
   });
   document.getElementById('members').addEventListener('input', function (e) {
+    pushUndoSnapshot();
     state.members = e.target.value; render();
   });
   document.getElementById('headline').addEventListener('input', function (e) {
+    pushUndoSnapshot();
     state.headline = e.target.value; render();
   });
   document.getElementById('heroUpload').addEventListener('change', function (e) {
     readFileAsDataUrl(e.target.files[0], function (url) {
+      pushUndoSnapshot();
       state.heroImage = url;
       applyCoverHeroToState(false).then(function () { render(); });
     });
     e.target.value = '';
   });
   document.getElementById('avatarUpload').addEventListener('change', function (e) {
-    readFileAsDataUrl(e.target.files[0], function (url) { state.avatar = url; });
+    readFileAsDataUrl(e.target.files[0], function (url) {
+      pushUndoSnapshot();
+      state.avatar = url;
+      render();
+    });
     e.target.value = '';
   });
   document.getElementById('topicTitle').addEventListener('input', function (e) {
+    pushUndoSnapshot();
     topicState.title = e.target.value; render();
   });
   function getTopicHeroTransform() {
@@ -1296,6 +2043,7 @@
 
   document.getElementById('topicHeroUpload').addEventListener('change', function (e) {
     readFileAsDataUrl(e.target.files[0], function (url) {
+      pushUndoSnapshot();
       topicState.heroImage = url;
       applyCoverHeroToState(true).then(function () {
         applySampledGradientFromHero().then(function () { render(); }).catch(function () { render(); });
@@ -1303,21 +2051,77 @@
     });
     e.target.value = '';
   });
-  function bindGradientInput(textId, pickId, key) {
+  function bindGradientInput(textId, pickId, key, stateTarget) {
+    var target = stateTarget || topicState;
     document.getElementById(textId).addEventListener('input', function (e) {
-      topicState[key] = e.target.value;
+      pushUndoSnapshot();
+      target[key] = e.target.value;
       document.getElementById(pickId).value = e.target.value;
       render();
     });
     document.getElementById(pickId).addEventListener('input', function (e) {
-      topicState[key] = e.target.value;
+      pushUndoSnapshot();
+      target[key] = e.target.value;
       document.getElementById(textId).value = e.target.value;
       render();
     });
   }
   bindGradientInput('gradientColor', 'gradientColorPick', 'gradientColor');
   bindGradientInput('badgeColor', 'badgeColorPick', 'badgeColor');
+  bindGradientInput('xiaobaoBgColor', 'xiaobaoBgPick', 'bgColor', xiaobaoState);
+  bindGradientInput('xiaobaoDouColor', 'xiaobaoDouPick', 'douColor', xiaobaoState);
+  bindGradientInput('xiaobaoAccentColor', 'xiaobaoAccentPick', 'accentColor', xiaobaoState);
+
+  document.getElementById('xiaobaoTitle').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.title = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoTitle2').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.title2 = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoIssue').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.issueNumber = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoVol').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.volLabel = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoDate').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.date = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoDateSub').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.dateSubtitle = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoYear').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.year = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoCredit').addEventListener('input', function (e) {
+    pushUndoSnapshot();
+    xiaobaoState.photoCredit = e.target.value;
+    render();
+  });
+  document.getElementById('xiaobaoSplashUpload').addEventListener('change', function (e) {
+    readFileAsDataUrl(e.target.files[0], function (url) {
+      pushUndoSnapshot();
+      xiaobaoState.splashImage = url;
+      applyCoverXiaobaoSplash().then(function () { render(); });
+    });
+    e.target.value = '';
+  });
   document.getElementById('sampleGradientBtn').addEventListener('click', function () {
+    pushUndoSnapshot();
     applySampledGradientFromHero()
       .then(function () { render(); })
       .catch(function () { alert('取色失败，请手动选择渐变色'); });
@@ -1329,6 +2133,7 @@
     document.getElementById('fetchTopicGroupsBtn').textContent = '抓取中…';
     document.getElementById('fetchTopicGroupsBtn').disabled = true;
     fetchDoubanGroups(urls).then(function (result) {
+      pushUndoSnapshot();
       topicState.groups = result.groups;
       if (result.errors.length) {
         errEl.textContent = '部分链接失败：' + result.errors.map(function (e) { return e.error; }).join('；');
@@ -1351,6 +2156,7 @@
     document.getElementById('fetchBtn').textContent = '抓取中…';
     document.getElementById('fetchBtn').disabled = true;
     fetchDoubanGroupHome(url).then(function (result) {
+      pushUndoSnapshot();
       state.groupName = result.groupName;
       state.members = result.members;
       state.avatar = result.avatar;
@@ -1371,6 +2177,7 @@
   });
   document.querySelectorAll('.export-format-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      pushUndoSnapshot();
       syncExportFormat(btn.dataset.format);
     });
   });
@@ -1378,8 +2185,16 @@
   document.getElementById('exportB').addEventListener('click', function () { exportPoster('b'); });
   document.getElementById('exportC').addEventListener('click', function () { exportPoster('c'); });
   document.getElementById('exportD').addEventListener('click', function () { exportPoster('d'); });
-  document.getElementById('exportAllGroup').addEventListener('click', function () { exportAllKeys(['a', 'b']); });
-  document.getElementById('exportAllTopic').addEventListener('click', function () { exportAllKeys(['c', 'd']); });
+  document.getElementById('exportAllGroup').addEventListener('click', function () { exportAllKeys(['a', 'b'], 'exportAllGroup'); });
+  document.getElementById('exportAllTopic').addEventListener('click', function () { exportAllKeys(['c', 'd'], 'exportAllTopic'); });
+  document.getElementById('exportE').addEventListener('click', function () { exportPoster('e'); });
+  document.getElementById('exportF').addEventListener('click', function () { exportPoster('f'); });
+  document.getElementById('exportN').addEventListener('click', function () { exportPoster('n'); });
+  document.getElementById('exportG').addEventListener('click', function () { exportPoster('g'); });
+  document.getElementById('exportH').addEventListener('click', function () { exportPoster('h'); });
+  document.getElementById('exportI').addEventListener('click', function () { exportPoster('i'); });
+  document.getElementById('exportJ').addEventListener('click', function () { exportPoster('j'); });
+  document.getElementById('exportAllXiaobao').addEventListener('click', function () { exportAllKeys(XiaobaoPoster.EXPORT_KEYS, 'exportAllXiaobao'); });
 
   (function updateFetchHint() {
     var hint = document.getElementById('fetchHint');
@@ -1393,10 +2208,11 @@
 
   syncInputs();
   syncTopicInputs();
+  syncXiaobaoInputs();
   resetExportState();
   ensurePosterFontsReady();
   switchTab('group');
-  render();
+  applyCoverXiaobaoSplash().then(function () { render(); });
 })();
   </script>
 </body>

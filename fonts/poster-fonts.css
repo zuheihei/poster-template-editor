@@ -1,4 +1,13 @@
-/* 思源黑体 Source Han Sans SC（Noto Sans SC 简体子集，400/600 嵌入） */
+/* 小报 / 海报用字体 — 全部本地 woff2 嵌入，不依赖 Google Fonts 或系统字体 */
+
+@font-face {
+  font-family: 'Pacifico';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('pacifico-400.woff2') format('woff2');
+}
+
 @font-face {
   font-family: 'Source Han Sans SC';
   font-style: normal;
@@ -23,6 +32,54 @@
   src: url('source-han-sans-sc-600.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Source Han Sans SC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('source-han-sans-sc-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Serif SC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('source-han-serif-sc-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Serif SC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('source-han-serif-sc-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Serif SC';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('source-han-serif-sc-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Han Serif SC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('source-han-serif-sc-600.woff2') format('woff2');
+}
+
 .poster-font {
-  font-family: 'Source Han Sans SC', 'Noto Sans SC', sans-serif;
+  font-family: 'Source Han Sans SC', sans-serif;
+}
+
+.poster-font-pacifico {
+  font-family: 'Pacifico', cursive;
+}
+
+.poster-font-serif {
+  font-family: 'Source Han Serif SC', serif;
 }

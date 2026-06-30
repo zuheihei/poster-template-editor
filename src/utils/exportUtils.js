@@ -1,5 +1,6 @@
 import { toCanvas, toJpeg, toPng } from 'html-to-image';
 import { applyPalette, GIFEncoder, quantize } from 'gifenc';
+import { ensurePosterFontsReady } from './posterFonts.js';
 
 const EXPORT_PIXEL_RATIO = 1;
 const JPEG_QUALITY = 0.92;
@@ -103,6 +104,7 @@ async function capturePosterDataUrl(node, width, height, format) {
 export async function exportPoster(node, filename, width, height, format = 'png') {
   if (!node) throw new Error('海报节点不存在');
 
+  await ensurePosterFontsReady();
   await waitForImages(node);
 
   const dataUrl = await capturePosterDataUrl(node, width, height, format);
@@ -111,6 +113,7 @@ export async function exportPoster(node, filename, width, height, format = 'png'
 
 /** 一键导出全部海报（打包 ZIP） */
 export async function exportAllPosters(items, format = 'png') {
+  await ensurePosterFontsReady();
   const { zipSync } = await import('fflate');
   const zipFiles = {};
 
