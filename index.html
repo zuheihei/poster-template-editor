@@ -175,6 +175,14 @@
     .poster-card {
       position: relative; box-sizing: border-box; overflow: hidden; flex-shrink: 0;
       font-family: 'Source Han Sans SC', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
+    }
+    .xiaobao-poster, .poster-font, .xiaobao-home-banner {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
     }
     .poster-bg { position: absolute; inset: 0; z-index: 0; }
     .poster-hero { position: absolute; z-index: 1; overflow: hidden; }
@@ -521,13 +529,14 @@
 (function () {
   'use strict';
 
-  var EXPORT_PIXEL_RATIO = 1;
+  var EXPORT_PIXEL_RATIO = 2;
+  var BATCH_EXPORT_PIXEL_RATIO = 1;
+  var JPG_EXPORT_QUALITY = 0.88;
   var MAX_JPEG_BYTES = 200 * 1024;
   var MAX_PNG_BYTES = 300 * 1024;
   var MAX_GIF_BYTES = 300 * 1024;
   var JPEG_BG = '#F7F7F7';
-  var JPEG_QUALITIES = [0.85, 0.78, 0.72, 0.66, 0.6, 0.54, 0.48, 0.42, 0.36, 0.32];
-  var JPEG_SCALES = [1, 0.92, 0.84, 0.76, 0.68];
+  var JPEG_SCALES = [1, 0.96, 0.92, 0.88];
   var PNG_SCALES = [1, 0.98, 0.96, 0.94, 0.92, 0.9, 0.88, 0.86, 0.84, 0.82, 0.8, 0.76, 0.72];
   var GIF_SCALES = [1, 0.72, 0.58, 0.48];
   var GIF_PALETTE_SIZES = [256, 128, 64, 32];
@@ -779,22 +788,12 @@
     return XiaobaoPoster.resolveTitlePosition(xiaobaoState, key, XiaobaoPoster.XIAOBAO_FIGMA[key]);
   }
 
-  function syncXiaobaoHeroToDom(onlyKey) {
+  function syncXiaobaoHeroToExportDom(onlyKey) {
     XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
       if (onlyKey && onlyKey !== key) return;
       var splash = XiaobaoPoster.getSplashSpec(key);
       if (!splash) return;
       var transform = getXiaobaoHeroTransform(key);
-      var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
-
-      var mount = document.querySelector('[data-variant-key="' + key + '"]');
-      if (mount) {
-        var img = mount.querySelector('.xiaobao-splash-img');
-        if (img) {
-          XiaobaoPoster.applySplashTransform(img, xiaobaoState, key, cfg.width, cfg.height);
-        }
-      }
-
       var node = exportNodes[key];
       if (!node) return;
       var exportImg = node.querySelector('.xiaobao-splash-img');
@@ -808,6 +807,42 @@
           { bottomFade: false }
         );
       }
+    });
+  }
+
+  function syncXiaobaoTitleToExportDom(onlyKey) {
+    XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
+      if (!spec || !spec.title) return;
+      var pos = getXiaobaoTitlePosition(key);
+      var node = exportNodes[key];
+      if (!node) return;
+      var titleEl = node.querySelector('.xiaobao-draggable-title');
+      if (titleEl) {
+        titleEl.style.left = pos.left + 'px';
+        titleEl.style.top = pos.top + 'px';
+      }
+    });
+  }
+
+  function syncXiaobaoHeroToDom(onlyKey) {
+    XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var splash = XiaobaoPoster.getSplashSpec(key);
+      if (!splash) return;
+      var transform = getXiaobaoHeroTransform(key);
+      var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
+
+      var mount = document.querySelector('[data-variant-key="' + key + '"]');
+      if (mount) {
+        var img = mount.querySelector('.xiaobao-splash-img');
+        if (img) {
+          XiaobaoPoster.applySplashTransform(img, xiaobaoState, key, cfg.width, cfg.height, splash);
+        }
+      }
+
+      syncXiaobaoHeroToExportDom(key);
     });
 
     if (window.__heroEditorActive && window.__heroEditorActive.syncBox) {
@@ -831,13 +866,7 @@
         }
       }
 
-      var node = exportNodes[key];
-      if (!node) return;
-      var exportTitle = node.querySelector('.xiaobao-draggable-title');
-      if (exportTitle) {
-        exportTitle.style.left = pos.left + 'px';
-        exportTitle.style.top = pos.top + 'px';
-      }
+      syncXiaobaoTitleToExportDom(key);
     });
 
     if (window.__titleEditorActive && window.__titleEditorActive.syncBox) {
@@ -1362,24 +1391,39 @@
 
   function ensurePosterFontsReady() {
     if (!document.fonts || !document.fonts.load) return Promise.resolve();
-    return Promise.all([
-      document.fonts.load('400 32px "' + POSTER_FONT_FAMILY + '"'),
-      document.fonts.load('500 32px "' + POSTER_FONT_FAMILY + '"'),
-      document.fonts.load('600 32px "' + POSTER_FONT_FAMILY + '"'),
-      document.fonts.load('700 32px "' + POSTER_FONT_FAMILY + '"'),
-      document.fonts.load('400 32px "Source Han Serif SC"'),
-      document.fonts.load('500 32px "Source Han Serif SC"'),
-      document.fonts.load('400 32px "Pacifico"'),
-    ]).then(function () {
-      return document.fonts.ready;
-    }).catch(function () { /* 字体加载失败时仍尝试导出 */ });
+    var fontLoads = [
+      '400 32px "' + POSTER_FONT_FAMILY + '"',
+      '500 32px "' + POSTER_FONT_FAMILY + '"',
+      '600 32px "' + POSTER_FONT_FAMILY + '"',
+      '700 32px "' + POSTER_FONT_FAMILY + '"',
+      '400 36px "' + POSTER_FONT_FAMILY + '"',
+      '400 42px "' + POSTER_FONT_FAMILY + '"',
+      '700 42px "' + POSTER_FONT_FAMILY + '"',
+      '700 66px "' + POSTER_FONT_FAMILY + '"',
+      '700 78px "' + POSTER_FONT_FAMILY + '"',
+      '700 113px "' + POSTER_FONT_FAMILY + '"',
+      '400 68px "' + POSTER_FONT_FAMILY + '"',
+      '400 88px "Source Han Serif SC"',
+      '500 88px "Source Han Serif SC"',
+      '400 38px "Pacifico"',
+      '400 48px "Pacifico"',
+      '400 128px "Pacifico"',
+      '400 198px "Pacifico"',
+    ];
+    return Promise.race([
+      Promise.all(fontLoads.map(function (spec) { return document.fonts.load(spec); })).then(function () {
+        return document.fonts.ready;
+      }),
+      new Promise(function (resolve) { setTimeout(resolve, 8000); }),
+    ]).catch(function () { /* 字体加载失败时仍尝试导出 */ });
   }
 
-  function getCaptureOptions(width, height) {
+  function getCaptureOptions(width, height, pixelRatio) {
+    var ratio = pixelRatio != null ? pixelRatio : EXPORT_PIXEL_RATIO;
     return {
       width: width, height: height,
-      canvasWidth: width * EXPORT_PIXEL_RATIO, canvasHeight: height * EXPORT_PIXEL_RATIO,
-      pixelRatio: EXPORT_PIXEL_RATIO, cacheBust: true, skipAutoScale: true,
+      canvasWidth: width * ratio, canvasHeight: height * ratio,
+      pixelRatio: ratio, cacheBust: true, skipAutoScale: true,
       skipFonts: false,
       style: { transform: 'none', margin: '0' }
     };
@@ -1401,8 +1445,8 @@
 
   function refreshXiaobaoExportNode(key) {
     exportNodes[key] = XiaobaoPoster.buildXiaobaoPoster(key, xiaobaoState);
-    syncXiaobaoHeroToDom(key);
-    syncXiaobaoTitleToDom(key);
+    syncXiaobaoHeroToExportDom(key);
+    syncXiaobaoTitleToExportDom(key);
     mountExportNode(exportNodes[key]);
   }
 
@@ -1519,30 +1563,33 @@
     });
   }
 
-  function resizePngDataUrl(pngDataUrl, scale) {
+  function resizePngDataUrl(pngDataUrl, scale, backgroundColor) {
     return loadImageDataUrl(pngDataUrl).then(function (img) {
       var canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(img.width * scale));
       canvas.height = Math.max(1, Math.round(img.height * scale));
       var ctx = canvas.getContext('2d');
-      ctx.fillStyle = JPEG_BG;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = backgroundColor || JPEG_BG;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       return canvas.toDataURL('image/png');
     });
   }
 
-  function binarySearchJpegQuality(pngDataUrl, maxBytes, low, high) {
-    return pngDataUrlToJpeg(pngDataUrl, high, JPEG_BG).then(function (best) {
+  function binarySearchJpegQuality(pngDataUrl, maxBytes, low, high, backgroundColor) {
+    var bg = backgroundColor || JPEG_BG;
+    return pngDataUrlToJpeg(pngDataUrl, high, bg).then(function (best) {
       if (getDataUrlByteSize(best) <= maxBytes) return best;
       function step(lo, hi, fallback) {
-        if (hi - lo < 0.05) {
+        if (hi - lo < 0.04) {
           return fallback && getDataUrlByteSize(fallback) <= maxBytes
             ? fallback
-            : pngDataUrlToJpeg(pngDataUrl, lo, JPEG_BG);
+            : pngDataUrlToJpeg(pngDataUrl, lo, bg);
         }
         var mid = (lo + hi) / 2;
-        return pngDataUrlToJpeg(pngDataUrl, mid, JPEG_BG).then(function (jpg) {
+        return pngDataUrlToJpeg(pngDataUrl, mid, bg).then(function (jpg) {
           if (getDataUrlByteSize(jpg) <= maxBytes) return step(mid, hi, jpg);
           return step(lo, mid, fallback);
         });
@@ -1551,14 +1598,14 @@
     });
   }
 
-  function fitJpegUnderLimit(pngDataUrl, maxBytes) {
+  function fitJpegUnderLimit(pngDataUrl, maxBytes, backgroundColor) {
     function attemptScale(scaleIndex) {
       var scale = JPEG_SCALES[scaleIndex];
       var prep = scale === 1
         ? Promise.resolve(pngDataUrl)
-        : resizePngDataUrl(pngDataUrl, scale);
+        : resizePngDataUrl(pngDataUrl, scale, backgroundColor);
       return prep.then(function (currentPng) {
-        return binarySearchJpegQuality(currentPng, maxBytes, 0.32, 0.85).then(function (jpg) {
+        return binarySearchJpegQuality(currentPng, maxBytes, 0.4, 0.92, backgroundColor).then(function (jpg) {
           if (getDataUrlByteSize(jpg) <= maxBytes) return jpg;
           if (scaleIndex + 1 >= JPEG_SCALES.length) return jpg;
           return attemptScale(scaleIndex + 1);
@@ -1721,6 +1768,8 @@
         canvas.width = img.width;
         canvas.height = img.height;
         var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.fillStyle = backgroundColor || JPEG_BG;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
@@ -1735,9 +1784,17 @@
     });
   }
 
-  function capturePosterDataUrl(node, width, height, format) {
+  function getCaptureBackgroundColor(node) {
+    if (node && node.classList && node.classList.contains('xiaobao-home-banner')) {
+      return node.style.backgroundColor || JPEG_BG;
+    }
+    return JPEG_BG;
+  }
+
+  function capturePosterDataUrl(node, width, height, format, pixelRatio) {
     assertExportReady();
-    var opts = getCaptureOptions(width, height);
+    var opts = getCaptureOptions(width, height, pixelRatio);
+    var captureBg = getCaptureBackgroundColor(node);
     if (format === 'gif') {
       return htmlToImage.toCanvas(node, opts).then(function (canvas) {
         return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
@@ -1746,13 +1803,13 @@
       });
     }
     if (format === 'jpg' && htmlToImage.toJpeg) {
-      var jpegOpts = Object.assign({}, opts, { quality: 0.78, backgroundColor: JPEG_BG });
+      var jpegOpts = Object.assign({}, opts, { quality: JPG_EXPORT_QUALITY, backgroundColor: captureBg });
       return htmlToImage.toJpeg(node, jpegOpts).then(function (jpgUrl) {
         if (getDataUrlByteSize(jpgUrl) <= MAX_JPEG_BYTES) {
           return { dataUrl: jpgUrl, format: 'jpg' };
         }
         return htmlToImage.toPng(node, opts).then(function (pngUrl) {
-          return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES).then(function (jpg) {
+          return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, captureBg).then(function (jpg) {
             return { dataUrl: jpg, format: 'jpg' };
           });
         });
@@ -1760,7 +1817,7 @@
     }
     return htmlToImage.toPng(node, opts).then(function (pngUrl) {
       if (format === 'jpg') {
-        return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES).then(function (jpg) {
+        return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, captureBg).then(function (jpg) {
           return { dataUrl: jpg, format: 'jpg' };
         });
       }
@@ -1829,9 +1886,13 @@
     var btn = btnId && document.getElementById(btnId);
     if (!btn) return;
     if (!btn.dataset.defaultLabel) btn.dataset.defaultLabel = btn.textContent;
-    btn.textContent = (total && current != null)
-      ? ('导出中 ' + current + '/' + total + '…')
-      : btn.dataset.defaultLabel;
+    if (current === 'preparing') {
+      btn.textContent = total ? ('准备中 0/' + total + '…') : '准备中…';
+    } else if (total && current != null) {
+      btn.textContent = '导出中 ' + current + '/' + total + '…';
+    } else {
+      btn.textContent = btn.dataset.defaultLabel;
+    }
   }
 
   function resetBatchExportButtons() {
@@ -1865,7 +1926,7 @@
     setExportDisabled(true);
     var total = validKeys.length;
     var completed = 0;
-    setBatchExportProgress(progressBtnId, 0, total);
+    setBatchExportProgress(progressBtnId, 'preparing', total);
     var safetyTimer = setTimeout(function () {
       alert('导出耗时较长，已恢复按钮，请重试');
       resetExportState();
@@ -1873,10 +1934,11 @@
 
     var nodes = validKeys.map(function (key) { return exportNodes[key]; });
     prepareExportBatch(nodes).then(function () {
+      setBatchExportProgress(progressBtnId, 0, total);
       return mapWithConcurrency(validKeys, BATCH_CAPTURE_CONCURRENCY, function (key) {
         var node = exportNodes[key];
         var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
-        return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat).then(function (result) {
+        return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat, BATCH_EXPORT_PIXEL_RATIO).then(function (result) {
           completed += 1;
           setBatchExportProgress(progressBtnId, completed, total);
           return { cfg: cfg, result: result };

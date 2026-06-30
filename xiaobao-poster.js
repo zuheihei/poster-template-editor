@@ -915,7 +915,7 @@
       height: spec.frame.height + 'px',
       position: 'relative',
       overflow: 'hidden',
-      background: accent,
+      backgroundColor: accent,
     });
     if (spec.shadow) {
       var s = spec.shadow;
