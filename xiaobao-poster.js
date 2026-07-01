@@ -29,10 +29,10 @@
   var FIXED_DATE_SUBTITLE = '每周五更新';
 
   var XIAOBAO_FIGMA = {
-    /** 1125×811 头图 */
+    /** 1125×811 头图（透明底导出） */
     p: {
       frame: { width: 1125, height: 811 },
-      bg: { left: 0, top: 0, width: 1125, height: 811 },
+      transparentBg: true,
       dou: { left: -183, top: -61, width: 1492, height: 896, opacity: 1 },
       titleLogo: { left: 45, top: 341, width: 683, height: 281, src: ASSETS.headTitleLogo, zIndex: 2 },
       badgeLogo: { left: 51, top: 251, width: 137, height: 59, src: ASSETS.headDoubanLogo, zIndex: 3 },
@@ -1094,14 +1094,14 @@
   }
 
   function buildHeadPoster(spec, data) {
-    var bgColor = resolveBg(data);
     var transparent = spec.transparentBg === true;
+    var bgColor = transparent ? null : resolveBg(data);
     var card = el('div', 'poster-card xiaobao-poster xiaobao-head poster-font', {
       width: spec.frame.width + 'px',
       height: spec.frame.height + 'px',
       position: 'relative',
       overflow: 'hidden',
-      background: transparent ? 'transparent' : bgColor,
+      background: transparent ? 'transparent' : resolveBg(data),
     });
     buildBgAndDou(spec, bgColor, resolveDouColor(data), data, 'p').forEach(function (node) {
       card.appendChild(node);
