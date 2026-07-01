@@ -19,13 +19,14 @@
     doumao: '/xiaobao/doumao.png',
     creditIcon: '/xiaobao/credit-icon.png',
     defaultSplash: '/xiaobao/banner-doumao.png',
-    headTitleLogo: '/xiaobao/head-title-logo.svg?v=4',
-    headDoubanLogo: '/xiaobao/head-douban-logo.png?v=2',
+    headTitleLogo: '/xiaobao/head-title-logo.svg?v=5',
+    headDoubanLogo: '/xiaobao/head-douban-logo.png?v=3',
   };
 
   var DEFAULT_BG = '#cff3ff';
   var DEFAULT_DOU = '#C2E4FF';
   var DEFAULT_ACCENT = '#47abdf';
+  var FIXED_DATE_SUBTITLE = '每周五更新';
 
   var XIAOBAO_FIGMA = {
     /** 1125×811 头图 Figma 215:69（透明底） */
@@ -732,6 +733,15 @@
       letterSpacing: '-0.85px',
       fontWeight: '400',
     }, data.date || '2026/06/12'));
+    if (d.subSize != null) {
+      wrap.appendChild(el('div', '', {
+        fontSize: d.subSize + 'px',
+        lineHeight: d.lineHeight + 'px',
+        letterSpacing: '-0.72px',
+        fontWeight: '400',
+        marginTop: (d.subGap != null ? d.subGap : 3) + 'px',
+      }, FIXED_DATE_SUBTITLE));
+    }
     return wrap;
   }
 
@@ -941,7 +951,7 @@
       color: '#000000',
       whiteSpace: 'nowrap',
       boxSizing: 'border-box',
-    }, 'Douer Weekly'));
+    }, FIXED_DATE_SUBTITLE));
     return wrap;
   }
 
@@ -1109,7 +1119,7 @@
         zIndex: String(bl.zIndex != null ? bl.zIndex : 3),
       }));
     }
-    var issueEl = buildIssueBadge(spec, data);
+    var issueEl = buildIssueBadge(spec, data, resolveAccent(data));
     if (issueEl) card.appendChild(issueEl);
     return card;
   }
