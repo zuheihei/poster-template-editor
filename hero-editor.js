@@ -593,7 +593,6 @@
       e.stopPropagation();
       if (editing) return;
       selectEditor();
-      beginEditFromPointer(e);
     });
 
     targetEl.addEventListener('dblclick', function (e) {

@@ -29,10 +29,10 @@
   var FIXED_DATE_SUBTITLE = '每周五更新';
 
   var XIAOBAO_FIGMA = {
-    /** 1125×811 头图 Figma 215:69（透明底） */
+    /** 1125×811 头图 */
     p: {
       frame: { width: 1125, height: 811 },
-      transparentBg: true,
+      bg: { left: 0, top: 0, width: 1125, height: 811 },
       dou: { left: -183, top: -61, width: 1492, height: 896, opacity: 1 },
       titleLogo: { left: 45, top: 341, width: 683, height: 281, src: ASSETS.headTitleLogo, zIndex: 2 },
       badgeLogo: { left: 51, top: 251, width: 137, height: 59, src: ASSETS.headDoubanLogo, zIndex: 3 },
@@ -46,9 +46,15 @@
         },
         vol: {
           left: 37, top: 144, width: 68, height: 32,
-          fontSize: 33, lineHeight: 32, fontWeight: 500,
-          fontFamily: FONT_SANS,
+          fontSize: 33, lineHeight: 32, letterSpacing: 0,
+          fontFamily: FONT_SANS, fontWeight: 500,
         },
+      },
+      date: {
+        left: 892, top: 549, width: 188, height: 80,
+        dateSize: 36, subSize: 36, lineHeight: 40,
+        letterSpacing: 0, subLetterSpacing: 0, subGap: 0,
+        textAlign: 'right',
       },
     },
     /** 开屏 1242×2688 */
@@ -501,6 +507,9 @@
   }
 
   function resolveDouOpacity(data, key, douSpec) {
+    if (data && data.colorPreset === 'yellow') {
+      return 0.8;
+    }
     if (key === 'p') {
       return douSpec.opacity != null ? douSpec.opacity : 1;
     }
@@ -630,7 +639,7 @@
         fontFamily: num.fontFamily || FONT_SERIF,
         fontSize: num.fontSize + 'px',
         fontWeight: String(num.fontWeight || 500),
-        lineHeight: '1',
+        lineHeight: num.lineHeight != null ? num.lineHeight + 'px' : '1',
         letterSpacing: (num.letterSpacing != null ? num.letterSpacing : -2) + 'px',
         color: '#000',
       }, data.issueNumber || '18'));
@@ -727,18 +736,21 @@
       color: '#000',
     });
     if (d.height) wrap.style.height = d.height + 'px';
+    if (d.textAlign) wrap.style.textAlign = d.textAlign;
     wrap.appendChild(el('div', '', {
       fontSize: d.dateSize + 'px',
       lineHeight: d.lineHeight + 'px',
-      letterSpacing: '-0.85px',
+      letterSpacing: (d.letterSpacing != null ? d.letterSpacing : -0.85) + 'px',
       fontWeight: '400',
+      fontFamily: FONT_SANS,
     }, data.date || '2026/06/12'));
     if (d.subSize != null) {
       wrap.appendChild(el('div', '', {
         fontSize: d.subSize + 'px',
         lineHeight: d.lineHeight + 'px',
-        letterSpacing: '-0.72px',
+        letterSpacing: (d.subLetterSpacing != null ? d.subLetterSpacing : (d.letterSpacing != null ? d.letterSpacing : -0.72)) + 'px',
         fontWeight: '400',
+        fontFamily: FONT_SANS,
         marginTop: (d.subGap != null ? d.subGap : 3) + 'px',
       }, FIXED_DATE_SUBTITLE));
     }
@@ -1082,15 +1094,16 @@
   }
 
   function buildHeadPoster(spec, data) {
-    var transparent = spec.transparentBg !== false;
+    var bgColor = resolveBg(data);
+    var transparent = spec.transparentBg === true;
     var card = el('div', 'poster-card xiaobao-poster xiaobao-head poster-font', {
       width: spec.frame.width + 'px',
       height: spec.frame.height + 'px',
       position: 'relative',
       overflow: 'hidden',
-      background: transparent ? 'transparent' : (spec.bgColor || '#ffffff'),
+      background: transparent ? 'transparent' : bgColor,
     });
-    buildBgAndDou(spec, null, resolveDouColor(data), data, 'p').forEach(function (node) {
+    buildBgAndDou(spec, bgColor, resolveDouColor(data), data, 'p').forEach(function (node) {
       card.appendChild(node);
     });
     if (spec.titleLogo) {
@@ -1121,6 +1134,8 @@
     }
     var issueEl = buildIssueBadge(spec, data, resolveAccent(data));
     if (issueEl) card.appendChild(issueEl);
+    var dateEl = buildDateBlock(spec, data);
+    if (dateEl) card.appendChild(dateEl);
     return card;
   }
 

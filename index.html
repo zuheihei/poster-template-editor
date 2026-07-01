@@ -555,6 +555,14 @@
                 </div>
                 <span class="xiaobao-color-preset-label">粉色</span>
               </button>
+              <button type="button" class="xiaobao-color-preset" data-preset="yellow" aria-label="黄色配色">
+                <div class="xiaobao-color-preset-swatches">
+                  <span style="background:#FFF5DA"></span>
+                  <span style="background:#FFECB9"></span>
+                  <span style="background:#F4A103"></span>
+                </div>
+                <span class="xiaobao-color-preset-label">黄色</span>
+              </button>
             </div>
             <p class="xiaobao-color-preset-hint">点击一组配色，自动设置背景、Dou 与 Banner / 按钮色</p>
           </div>
@@ -780,8 +788,12 @@
   };
 
   var undoStack = [];
+  var redoStack = [];
   var undoSuspended = false;
+  var undoDebounceTimer = null;
+  var undoCaptureBaseline = null;
   var MAX_UNDO = 80;
+  var UNDO_INPUT_DEBOUNCE_MS = 400;
 
   function snapshotAppState() {
     return {
@@ -793,15 +805,50 @@
     };
   }
 
+  function snapshotsEqual(a, b) {
+    if (!a || !b) return false;
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
   function replaceStateObject(target, source) {
     Object.keys(target).forEach(function (k) { delete target[k]; });
     Object.keys(source).forEach(function (k) { target[k] = source[k]; });
   }
 
+  function commitUndoSnapshot(snap) {
+    if (undoSuspended || !snap) return;
+    var prev = undoStack.length ? undoStack[undoStack.length - 1] : null;
+    if (prev && snapshotsEqual(prev, snap)) return;
+    undoStack.push(snap);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack = [];
+  }
+
+  function flushUndoCapture() {
+    if (undoDebounceTimer) {
+      clearTimeout(undoDebounceTimer);
+      undoDebounceTimer = null;
+    }
+    if (undoCaptureBaseline) {
+      commitUndoSnapshot(undoCaptureBaseline);
+      undoCaptureBaseline = null;
+    }
+  }
+
+  function scheduleUndoCapture() {
+    if (undoSuspended) return;
+    if (!undoCaptureBaseline) undoCaptureBaseline = snapshotAppState();
+    if (undoDebounceTimer) clearTimeout(undoDebounceTimer);
+    undoDebounceTimer = setTimeout(function () {
+      undoDebounceTimer = null;
+      flushUndoCapture();
+    }, UNDO_INPUT_DEBOUNCE_MS);
+  }
+
   function pushUndoSnapshot() {
     if (undoSuspended) return;
-    undoStack.push(snapshotAppState());
-    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    flushUndoCapture();
+    commitUndoSnapshot(snapshotAppState());
   }
 
   function restoreSnapshot(snap) {
@@ -825,14 +872,18 @@
   }
 
   function undoLastChange() {
+    flushUndoCapture();
     if (undoStack.length === 0) return;
+    redoStack.push(snapshotAppState());
     restoreSnapshot(undoStack.pop());
   }
 
-  function isNativeEditableTarget(el) {
-    if (!el) return false;
-    var tag = el.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  function bindUndoInput(el, handler) {
+    el.addEventListener('input', function (e) {
+      scheduleUndoCapture();
+      handler(e);
+    });
+    el.addEventListener('blur', flushUndoCapture);
   }
 
   function applyCoverHeroToState(isTopic) {
@@ -2349,22 +2400,19 @@
   document.addEventListener('keydown', function (e) {
     var mod = e.metaKey || e.ctrlKey;
     if (!mod || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
-    if (isNativeEditableTarget(e.target)) return;
+    if (e.isComposing) return;
     if (undoStack.length === 0) return;
     e.preventDefault();
     undoLastChange();
   });
 
-  document.getElementById('groupName').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('groupName'), function (e) {
     state.groupName = e.target.value; render();
   });
-  document.getElementById('members').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('members'), function (e) {
     state.members = e.target.value; render();
   });
-  document.getElementById('headline').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('headline'), function (e) {
     state.headline = e.target.value; render();
   });
   document.getElementById('heroUpload').addEventListener('change', function (e) {
@@ -2383,8 +2431,7 @@
     });
     e.target.value = '';
   });
-  document.getElementById('topicTitle').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('topicTitle'), function (e) {
     topicState.title = e.target.value; render();
   });
   function getTopicHeroTransform() {
@@ -2414,14 +2461,12 @@
   });
   function bindGradientInput(textId, pickId, key, stateTarget) {
     var target = stateTarget || topicState;
-    document.getElementById(textId).addEventListener('input', function (e) {
-      pushUndoSnapshot();
+    bindUndoInput(document.getElementById(textId), function (e) {
       target[key] = e.target.value;
       document.getElementById(pickId).value = e.target.value;
       render();
     });
-    document.getElementById(pickId).addEventListener('input', function (e) {
-      pushUndoSnapshot();
+    bindUndoInput(document.getElementById(pickId), function (e) {
       target[key] = e.target.value;
       document.getElementById(textId).value = e.target.value;
       render();
@@ -2435,6 +2480,7 @@
     { id: 'green', bgColor: '#f2ffb0', douColor: '#B9F68B', accentColor: '#7edb10' },
     { id: 'purple', bgColor: '#ede8ff', douColor: '#F0D4FF', accentColor: '#a17ae4' },
     { id: 'pink', bgColor: '#ffebe6', douColor: '#FFD3ED', accentColor: '#f37b9f' },
+    { id: 'yellow', bgColor: '#FFF5DA', douColor: '#FFECB9', accentColor: '#F4A103' },
   ];
 
   function normalizeHexColor(value) {
@@ -2491,36 +2537,29 @@
     applyXiaobaoColorPreset(btn.dataset.preset);
   });
 
-  document.getElementById('xiaobaoTitle').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoTitle'), function (e) {
     applyXiaobaoTitle1Group(e.target.value);
   });
-  document.getElementById('xiaobaoTitle2').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoTitle2'), function (e) {
     applyXiaobaoTitle2Group(e.target.value);
   });
-  document.getElementById('xiaobaoIssue').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoIssue'), function (e) {
     xiaobaoState.issueNumber = e.target.value;
     render();
   });
-  document.getElementById('xiaobaoVol').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoVol'), function (e) {
     xiaobaoState.volLabel = e.target.value;
     render();
   });
-  document.getElementById('xiaobaoDate').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoDate'), function (e) {
     xiaobaoState.date = e.target.value;
     render();
   });
-  document.getElementById('xiaobaoYear').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoYear'), function (e) {
     xiaobaoState.year = e.target.value;
     render();
   });
-  document.getElementById('xiaobaoCredit').addEventListener('input', function (e) {
-    pushUndoSnapshot();
+  bindUndoInput(document.getElementById('xiaobaoCredit'), function (e) {
     xiaobaoState.photoCredit = e.target.value;
     render();
   });
