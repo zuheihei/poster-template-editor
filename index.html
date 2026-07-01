@@ -937,9 +937,17 @@
     });
   }
 
+  function clearXiaobaoTitlePositionOverrides(keys) {
+    if (!xiaobaoState.titleTransformsBySize) return;
+    keys.forEach(function (key) {
+      delete xiaobaoState.titleTransformsBySize[key];
+    });
+  }
+
   function applyXiaobaoTitle1Group(text) {
     xiaobaoState.title = text;
     clearXiaobaoTitleOverrides(XIAOBAO_TITLE1_KEYS);
+    clearXiaobaoTitlePositionOverrides(['g', 'h']);
     render();
   }
 
@@ -965,32 +973,31 @@
     if (key !== 'g' && key !== 'h') return;
     var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
     if (!spec || !spec.title) return;
-    var pos = getXiaobaoTitlePosition(key);
-    var hotTop = XiaobaoPoster.resolveHotLabelTop(xiaobaoState, key, spec);
+    var layout = XiaobaoPoster.resolveTitleLayout(xiaobaoState, key, spec);
+    if (!layout) return;
+
+    function applyLayout(titleEl, hotEl) {
+      if (titleEl) {
+        titleEl.style.left = layout.left + 'px';
+        titleEl.style.top = layout.top + 'px';
+        titleEl.style.height = layout.height + 'px';
+      }
+      if (hotEl && layout.hotTop != null) hotEl.style.top = layout.hotTop + 'px';
+    }
 
     var mount = document.querySelector('[data-variant-key="' + key + '"]');
     if (mount) {
-      var titleEl = mount.querySelector('.xiaobao-draggable-title');
-      if (titleEl) {
-        titleEl.style.left = pos.left + 'px';
-        titleEl.style.top = pos.top + 'px';
-      }
-      if (hotTop != null) {
-        var hotEl = mount.querySelector('.xiaobao-hot-label');
-        if (hotEl) hotEl.style.top = hotTop + 'px';
-      }
+      applyLayout(
+        mount.querySelector('.xiaobao-draggable-title'),
+        mount.querySelector('.xiaobao-hot-label')
+      );
     }
     var node = exportNodes[key];
     if (node) {
-      var exportTitle = node.querySelector('.xiaobao-draggable-title');
-      if (exportTitle) {
-        exportTitle.style.left = pos.left + 'px';
-        exportTitle.style.top = pos.top + 'px';
-      }
-      if (hotTop != null) {
-        var exportHot = node.querySelector('.xiaobao-hot-label');
-        if (exportHot) exportHot.style.top = hotTop + 'px';
-      }
+      applyLayout(
+        node.querySelector('.xiaobao-draggable-title'),
+        node.querySelector('.xiaobao-hot-label')
+      );
     }
   }
 
@@ -1044,6 +1051,10 @@
   function syncXiaobaoTitleToExportDom(onlyKey) {
     XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
       if (onlyKey && onlyKey !== key) return;
+      if (key === 'g' || key === 'h') {
+        syncXiaobaoTitleLayoutForKey(key);
+        return;
+      }
       var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
       if (!spec || !spec.title) return;
       var pos = getXiaobaoTitlePosition(key);
@@ -1091,6 +1102,10 @@
       if (onlyKey && onlyKey !== key) return;
       var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
       if (!spec || !spec.title) return;
+      if (key === 'g' || key === 'h') {
+        syncXiaobaoTitleLayoutForKey(key);
+        return;
+      }
       var pos = getXiaobaoTitlePosition(key);
 
       var mount = document.querySelector('[data-variant-key="' + key + '"]');
@@ -1099,11 +1114,6 @@
         if (titleEl) {
           titleEl.style.left = pos.left + 'px';
           titleEl.style.top = pos.top + 'px';
-        }
-        var hotTop = XiaobaoPoster.resolveHotLabelTop(xiaobaoState, key, spec);
-        if (hotTop != null) {
-          var hotEl = mount.querySelector('.xiaobao-hot-label');
-          if (hotEl) hotEl.style.top = hotTop + 'px';
         }
       }
 
@@ -1597,6 +1607,10 @@
       if (exportNodes[key]) layer.appendChild(exportNodes[key]);
     });
     updateTopicGroupCount();
+    ensurePosterFontsReady().then(function () {
+      syncXiaobaoTitleLayoutForKey('g');
+      syncXiaobaoTitleLayoutForKey('h');
+    });
   }
 
   function switchTab(tab) {
@@ -2606,9 +2620,10 @@
   syncTopicInputs();
   syncXiaobaoInputs();
   resetExportState();
-  ensurePosterFontsReady();
   switchTab('group');
-  applyCoverXiaobaoSplash().then(function () { render(); });
+  ensurePosterFontsReady().then(function () {
+    return applyCoverXiaobaoSplash();
+  }).then(function () { render(); });
 })();
   </script>
 </body>

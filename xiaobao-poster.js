@@ -367,7 +367,10 @@
   }
 
   function getContentBandBottom(spec, key) {
-    if (key === 'h' && spec.volInline) return spec.volInline.top;
+    var headerBottom = getHeaderBottom(spec, key);
+    if (spec.volInline && spec.volInline.top >= headerBottom) {
+      return spec.volInline.top;
+    }
     if (key === 'g' && spec.button) return spec.button.top;
     return null;
   }
@@ -389,10 +392,35 @@
       var gap = spec.hotTitleGap != null ? spec.hotTitleGap : 12;
       var stackHeight = hotHeight + gap + titleHeight;
       var stackTop = bandTop + (bandHeight - stackHeight) / 2;
-      return { hotTop: stackTop, titleTop: stackTop + hotHeight + gap };
+      return { hotTop: stackTop, titleTop: stackTop + hotHeight + gap, titleHeight: titleHeight };
     }
 
-    return { hotTop: null, titleTop: bandTop + (bandHeight - titleHeight) / 2 };
+    return { hotTop: null, titleTop: bandTop + (bandHeight - titleHeight) / 2, titleHeight: titleHeight };
+  }
+
+  function hasCustomTitlePosition(data, key) {
+    return !!(data.titleTransformsBySize && data.titleTransformsBySize[key]);
+  }
+
+  function measureTitleContentHeight(data, key, spec) {
+    if (!spec || !spec.title) return 0;
+    var t = spec.title;
+    var titleLines = countRenderedTitleLines(resolveTitleText(data, key), t);
+    return titleLines * (t.lineHeight || t.fontSize);
+  }
+
+  function resolveTitleLayout(data, key, spec) {
+    if (!spec || !spec.title) return null;
+    var pos = resolveTitlePosition(data, key, spec);
+    if (!pos) return null;
+    var t = spec.title;
+    var contentHeight = measureTitleContentHeight(data, key, spec);
+    return {
+      left: pos.left,
+      top: pos.top,
+      height: hasCustomTitlePosition(data, key) ? t.height : contentHeight,
+      hotTop: resolveHotLabelTop(data, key, spec),
+    };
   }
 
   function resolveTitlePosition(data, key, spec) {
@@ -539,16 +567,18 @@
   function buildTitle(spec, data, key) {
     if (!spec.title) return null;
     var t = spec.title;
-    var pos = resolveTitlePosition(data, key, spec);
+    var layout = resolveTitleLayout(data, key, spec);
+    if (!layout) return null;
     var titleText = formatTitleHtml(resolveTitleText(data, key));
     var styles = {
       position: 'absolute',
-      left: pos.left + 'px',
-      top: pos.top + 'px',
+      left: layout.left + 'px',
+      top: layout.top + 'px',
       width: t.width + 'px',
-      height: t.height + 'px',
+      height: layout.height + 'px',
       fontSize: t.fontSize + 'px',
       fontWeight: String(t.fontWeight || 700),
+      fontFamily: FONT_SANS,
       lineHeight: (t.lineHeight || t.fontSize) + 'px',
       textAlign: t.textAlign || 'left',
       color: t.color || '#000',
@@ -1227,6 +1257,7 @@
     buildXiaobaoPoster: buildXiaobaoPoster,
     getSplashSpec: getSplashSpec,
     resolveTitlePosition: resolveTitlePosition,
+    resolveTitleLayout: resolveTitleLayout,
     resolveHotLabelTop: resolveHotLabelTop,
     resolveTitleText: resolveTitleText,
     formatTitleHtml: formatTitleHtml,
