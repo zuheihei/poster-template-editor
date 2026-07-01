@@ -415,7 +415,12 @@
     var setPosition = options.setPosition;
     var onChange = options.onChange;
     var onInteractionStart = options.onInteractionStart;
+    var enableTextEdit = !!options.enableTextEdit;
+    var getText = options.getText;
+    var setText = options.setText;
+    var onTextEditStart = options.onTextEditStart;
     var selected = false;
+    var editing = false;
 
     var editor = document.createElement('div');
     editor.className = 'hero-editor title-position-editor';
@@ -431,21 +436,103 @@
     editor.appendChild(box);
     mountEl.appendChild(editor);
 
+    function formatEditableTitleHtml(text) {
+      return String(text || '')
+        .replace(/\\n/g, '<br>')
+        .replace(/\r?\n/g, '<br>');
+    }
+
+    function readEditableTitleText(el) {
+      return String(el.innerText || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+    }
+
     function selectEditor() {
       if (global.__titleEditorActive && global.__titleEditorActive !== api) {
+        if (global.__titleEditorActive.finishEditing) global.__titleEditorActive.finishEditing(true);
         global.__titleEditorActive.deselect();
       }
       selected = true;
       editor.classList.add('is-active');
+      targetEl.classList.add('title-is-selected');
       global.__titleEditorActive = api;
       syncBox();
     }
 
     function deselectEditor() {
+      if (editing) finishEditing(true);
       if (!selected) return;
       selected = false;
       editor.classList.remove('is-active');
+      targetEl.classList.remove('title-is-selected');
       if (global.__titleEditorActive === api) global.__titleEditorActive = null;
+    }
+
+    function enterEditMode() {
+      if (!enableTextEdit || !getText || !setText || editing) return;
+      if (onTextEditStart) onTextEditStart();
+      editing = true;
+      editor.classList.add('is-editing');
+      targetEl.classList.add('title-is-editing');
+      targetEl.setAttribute('contenteditable', 'true');
+      targetEl.setAttribute('spellcheck', 'false');
+      targetEl.focus();
+    }
+
+    function placeCaretAtEnd() {
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(targetEl);
+        range.collapse(false);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch (_) { /* ignore */ }
+    }
+
+    function beginEditFromPointer(e) {
+      if (!enableTextEdit) return;
+      enterEditMode();
+      requestAnimationFrame(function () {
+        if (!editing) return;
+        targetEl.focus();
+        if (typeof e === 'undefined') {
+          placeCaretAtEnd();
+          return;
+        }
+        if (document.caretRangeFromPoint) {
+          var caret = document.caretRangeFromPoint(e.clientX, e.clientY);
+          if (caret) {
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(caret);
+            return;
+          }
+        }
+        placeCaretAtEnd();
+      });
+    }
+
+    function finishEditing(save) {
+      if (!editing) return;
+      editing = false;
+      editor.classList.remove('is-editing');
+      targetEl.classList.remove('title-is-editing');
+      targetEl.removeAttribute('contenteditable');
+      targetEl.removeAttribute('spellcheck');
+      if (save && getText && setText) {
+        var nextText = readEditableTitleText(targetEl);
+        var prevText = getText();
+        if (nextText !== prevText) {
+          setText(nextText);
+          return;
+        }
+        targetEl.innerHTML = formatEditableTitleHtml(prevText);
+      } else if (getText) {
+        targetEl.innerHTML = formatEditableTitleHtml(getText());
+      }
+      syncBox();
     }
 
     function syncBox() {
@@ -504,19 +591,56 @@
 
     targetEl.addEventListener('pointerdown', function (e) {
       e.stopPropagation();
-      if (!selected) {
-        selectEditor();
-        return;
-      }
-      e.preventDefault();
-      beginDrag(e);
+      if (editing) return;
+      selectEditor();
+      beginEditFromPointer(e);
     });
 
-    box.addEventListener('pointerdown', function (e) {
-      if (!selected) return;
-      e.preventDefault();
+    targetEl.addEventListener('dblclick', function (e) {
       e.stopPropagation();
-      beginDrag(e);
+      if (!selected) selectEditor();
+      if (!editing) beginEditFromPointer(e);
+    });
+
+    targetEl.addEventListener('blur', function () {
+      window.setTimeout(function () {
+        if (!editing) return;
+        if (global.__titleEditorActive !== api) return;
+        var activeEl = document.activeElement;
+        if (activeEl && (activeEl === targetEl || editor.contains(activeEl))) return;
+        finishEditing(true);
+      }, 0);
+    });
+
+    targetEl.addEventListener('keydown', function (e) {
+      if (!editing) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        finishEditing(false);
+        targetEl.blur();
+        return;
+      }
+      e.stopPropagation();
+    });
+
+    targetEl.addEventListener('paste', function (e) {
+      if (!editing) return;
+      e.preventDefault();
+      var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
+        document.execCommand('insertText', false, text);
+      } else {
+        targetEl.innerText = text;
+      }
+    });
+
+    box.querySelectorAll('.title-position-handle').forEach(function (handle) {
+      handle.addEventListener('pointerdown', function (e) {
+        if (!selected || editing) return;
+        e.preventDefault();
+        e.stopPropagation();
+        beginDrag(e);
+      });
     });
 
     if (!global.__titleEditorDocBound) {
@@ -525,6 +649,7 @@
         var active = global.__titleEditorActive;
         if (!active || !active.isSelected()) return;
         if (active.isEditingTarget(e.target)) return;
+        if (active.finishEditing) active.finishEditing(true);
         active.deselect();
       });
     }
@@ -534,9 +659,12 @@
     var api = {
       select: selectEditor,
       deselect: deselectEditor,
+      finishEditing: finishEditing,
       isSelected: function () { return selected; },
+      isEditing: function () { return editing; },
       isEditingTarget: function (node) {
-        return node === targetEl || node === box || editor.contains(node);
+        if (editing && (node === targetEl || targetEl.contains(node))) return true;
+        return node === box || editor.contains(node);
       },
       syncBox: syncBox,
       destroy: function () {

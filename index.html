@@ -93,6 +93,13 @@
     .export-btn:hover:not(:disabled) { background: #f5f5f5; }
     .export-btn.primary { background: #2c2a26; color: #fff; border-color: #2c2a26; }
     .export-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .export-single-row { display: flex; gap: 10px; align-items: stretch; }
+    .export-select {
+      flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 14px; font-family: inherit; background: #fff; color: #333;
+    }
+    .export-select:disabled { opacity: 0.6; cursor: not-allowed; }
+    .export-single-row .export-btn { flex: 0 0 auto; width: auto; min-width: 108px; margin-bottom: 0; white-space: nowrap; }
 
     .batch-download-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -119,7 +126,7 @@
     .preview-heading { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
     .preview-hint { font-size: 13px; color: #888; margin-bottom: 28px; }
     .preview-grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
-    #previewGridXiaobao { justify-content: flex-start; }
+    #previewGridXiaobao { justify-content: flex-start; overflow-x: auto; max-width: 100%; }
     .preview-item { display: flex; flex-direction: column; align-items: center; }
     .xiaobao-gh-column { display: flex; flex-direction: column; align-items: flex-start; }
     .xiaobao-gh-column .preview-item { align-items: flex-start; }
@@ -139,16 +146,23 @@
       position: absolute; bottom: 100%; left: 0; margin-bottom: 12px; white-space: nowrap;
     }
     .xiaobao-main-layout {
-      display: flex; flex-direction: column; align-items: flex-start;
+      display: flex; flex-direction: column; align-items: flex-start; overflow: visible;
     }
     .xiaobao-left-stack {
-      display: flex; flex-direction: column; align-items: flex-start;
+      display: flex; flex-direction: column; align-items: flex-start; overflow: visible;
     }
-    .xiaobao-jn-col {
-      position: relative; display: flex; flex-direction: column; align-items: flex-start;
+    .xiaobao-top-section {
+      display: flex; flex-direction: row; align-items: flex-start;
+      gap: var(--ip-gap, 27px); overflow: visible;
     }
-    .xiaobao-j-col--above-n {
-      position: absolute; left: 0; top: calc(-1 * var(--j-lift, 0px));
+    .xiaobao-left-col {
+      display: flex; flex-direction: column; align-items: flex-start; overflow: visible;
+    }
+    .xiaobao-nj-col {
+      position: relative; flex: 0 0 auto; align-self: flex-start;
+    }
+    .xiaobao-j-side-col {
+      position: absolute; left: calc(100% + var(--nj-gap, 41px)); top: 0;
     }
     .xiaobao-h-top-row {
       display: flex; flex-direction: row; align-items: flex-start; gap: var(--hk-gap, 27px);
@@ -160,6 +174,9 @@
     .xiaobao-hk-col { display: flex; flex-direction: column; align-items: flex-start; }
     .xiaobao-kright-col {
       display: flex; flex-direction: column; align-items: flex-start; gap: var(--ki-gap, 38px);
+    }
+    .xiaobao-i-row {
+      display: flex; flex-direction: row; align-items: flex-start; gap: var(--ip-gap, 27px);
     }
     .preview-label { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 12px; }
     .preview-section-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px; }
@@ -183,6 +200,16 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: geometricPrecision;
+    }
+    .preview-inner[data-variant-key="p"] {
+      background-color: #fff;
+      background-image:
+        linear-gradient(45deg, #e8e8e8 25%, transparent 25%),
+        linear-gradient(-45deg, #e8e8e8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e8e8e8 75%),
+        linear-gradient(-45deg, transparent 75%, #e8e8e8 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
     }
     .poster-bg { position: absolute; inset: 0; z-index: 0; }
     .poster-hero { position: absolute; z-index: 1; overflow: hidden; }
@@ -230,6 +257,77 @@
     .color-row { display: flex; gap: 10px; align-items: center; }
     .color-row input[type='color'] { width: 42px; height: 36px; padding: 2px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
     .color-row input[type='text'] { flex: 1; min-width: 0; }
+    .xiaobao-color-presets {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    }
+    .xiaobao-color-preset {
+      display: flex; flex-direction: column; gap: 6px; padding: 8px;
+      border: 2px solid #e8e8e8; border-radius: 10px; background: #fff;
+      cursor: pointer; font: inherit; text-align: left;
+    }
+    .xiaobao-color-preset:hover { border-color: #c8c8c8; background: #fafafa; }
+    .xiaobao-color-preset.active {
+      border-color: #47abdf;
+      box-shadow: 0 0 0 2px rgba(71, 171, 223, 0.18);
+    }
+    .xiaobao-color-preset-swatches { display: flex; gap: 4px; height: 28px; border-radius: 6px; overflow: hidden; }
+    .xiaobao-color-preset-swatches span { flex: 1; }
+    .xiaobao-color-preset-label { font-size: 12px; color: #666; line-height: 1; }
+    .xiaobao-color-preset-hint { font-size: 11px; color: #999; margin-top: 6px; line-height: 1.4; }
+    .form-step {
+      margin-bottom: 24px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid #eee;
+    }
+    .form-step:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .form-step-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #725940;
+      margin-bottom: 14px;
+    }
+    .form-step .form-group:first-of-type { margin-top: 0; }
+    .form-step .export-section {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    .xiaobao-splash-upload {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 168px;
+      padding: 20px 16px;
+      border: 1.5px dashed #c8c8c8;
+      border-radius: 10px;
+      background: #fafafa;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .xiaobao-splash-upload:hover { background: #f3f3f3; border-color: #aaa; }
+    .xiaobao-splash-upload-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .xiaobao-splash-upload-plus {
+      font-size: 56px;
+      font-weight: 200;
+      line-height: 1;
+      color: #c4c4c4;
+    }
+    .xiaobao-splash-upload-text {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #888;
+      line-height: 1.4;
+    }
     .secondary-btn {
       display: inline-block; margin-top: 8px; padding: 8px 12px; border: 1px solid #ddd;
       border-radius: 8px; background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
@@ -273,23 +371,31 @@
     .hero-editor-handle-sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
     .topic-hero-img, .poster-hero-img, .xiaobao-splash-img { touch-action: none; user-select: none; }
     .preview-inner .xiaobao-splash-img { cursor: pointer; }
-    .xiaobao-draggable-title { cursor: move; touch-action: none; user-select: none; }
+    .xiaobao-draggable-title { cursor: text; touch-action: auto; user-select: none; }
+    .xiaobao-draggable-title.title-is-editing,
+    .xiaobao-draggable-title.title-is-selected {
+      cursor: text; touch-action: auto; user-select: text; -webkit-user-select: text;
+    }
+    .xiaobao-draggable-title.title-is-editing {
+      outline: none; z-index: 60;
+    }
+    .title-position-editor.is-editing .title-position-box { pointer-events: none; }
     .title-position-editor .title-position-box {
       border: 3px solid #ea580c;
-      background: rgba(234, 88, 12, 0.1);
+      background: rgba(234, 88, 12, 0.08);
       box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.95), 0 0 0 5px rgba(234, 88, 12, 0.22);
+      pointer-events: none;
     }
     .title-position-editor.is-active .title-position-box {
       display: block;
-      pointer-events: auto;
-      cursor: grab;
+      pointer-events: none;
     }
-    .title-position-editor.is-active .title-position-box:active { cursor: grabbing; }
     .title-position-editor .title-position-handle {
       position: absolute; width: 14px; height: 14px; border-radius: 50%;
-      background: #fff; border: 3px solid #ea580c; pointer-events: none; z-index: 2;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      background: #fff; border: 3px solid #ea580c; pointer-events: auto; z-index: 2;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); cursor: grab;
     }
+    .title-position-editor .title-position-handle:active { cursor: grabbing; }
     .title-position-handle-nw { left: -8px; top: -8px; }
     .title-position-handle-ne { right: -8px; top: -8px; }
     .title-position-handle-se { right: -8px; bottom: -8px; }
@@ -412,86 +518,115 @@
       </div>
 
       <div class="tab-panel" data-tab-panel="xiaobao" role="tabpanel">
-        <div class="form-group">
-          <label for="xiaobaoTitle">标题一</label>
-          <textarea id="xiaobaoTitle" rows="3" placeholder="华山脚下收麦子，粒粒皆辛苦"></textarea>
-          <p class="fetch-hint">Enter 换行；用于除 1080×317 外的尺寸；预览中点击标题可拖拽移动</p>
-        </div>
-        <div class="form-group">
-          <label for="xiaobaoTitle2">标题二</label>
-          <textarea id="xiaobaoTitle2" rows="2" placeholder="我发现了幸福的组成公式"></textarea>
-          <p class="fetch-hint">Enter 换行；用于 1080×317，标题区域最宽 1019px；预览中可拖拽移动</p>
-        </div>
-        <div class="form-group">
-          <label>开屏图片</label>
-          <label class="upload-btn">上传开屏图<input type="file" id="xiaobaoSplashUpload" accept="image/*" hidden></label>
-        </div>
-        <div class="form-group">
-          <label>背景色</label>
-          <div class="color-row">
-            <input type="color" id="xiaobaoBgPick" value="#cff3ff">
-            <input id="xiaobaoBgColor" type="text" value="#cff3ff" placeholder="背景色组件">
+        <section class="form-step" aria-label="STEP.1">
+          <span class="form-step-label">STEP.1</span>
+          <div class="form-group">
+            <label>配色方案</label>
+            <div class="xiaobao-color-presets" id="xiaobaoColorPresets">
+              <button type="button" class="xiaobao-color-preset active" data-preset="blue" aria-label="蓝色配色">
+                <div class="xiaobao-color-preset-swatches">
+                  <span style="background:#cff3ff"></span>
+                  <span style="background:#C2E4FF"></span>
+                  <span style="background:#47abdf"></span>
+                </div>
+                <span class="xiaobao-color-preset-label">蓝色</span>
+              </button>
+              <button type="button" class="xiaobao-color-preset" data-preset="green" aria-label="绿色配色">
+                <div class="xiaobao-color-preset-swatches">
+                  <span style="background:#f2ffb0"></span>
+                  <span style="background:#B9F68B"></span>
+                  <span style="background:#7edb10"></span>
+                </div>
+                <span class="xiaobao-color-preset-label">绿色</span>
+              </button>
+              <button type="button" class="xiaobao-color-preset" data-preset="purple" aria-label="紫色配色">
+                <div class="xiaobao-color-preset-swatches">
+                  <span style="background:#ede8ff"></span>
+                  <span style="background:#F0D4FF"></span>
+                  <span style="background:#a17ae4"></span>
+                </div>
+                <span class="xiaobao-color-preset-label">紫色</span>
+              </button>
+              <button type="button" class="xiaobao-color-preset" data-preset="pink" aria-label="粉色配色">
+                <div class="xiaobao-color-preset-swatches">
+                  <span style="background:#ffebe6"></span>
+                  <span style="background:#FFD3ED"></span>
+                  <span style="background:#f37b9f"></span>
+                </div>
+                <span class="xiaobao-color-preset-label">粉色</span>
+              </button>
+            </div>
+            <p class="xiaobao-color-preset-hint">点击一组配色，自动设置背景、Dou 与 Banner / 按钮色</p>
           </div>
-        </div>
-        <div class="form-group">
-          <label>背景组件（Dou）颜色</label>
-          <div class="color-row">
-            <input type="color" id="xiaobaoDouPick" value="#98e2fb">
-            <input id="xiaobaoDouColor" type="text" value="#98e2fb" placeholder="Dou 水印色">
+          <div class="form-group">
+            <label for="xiaobaoSplashUpload">开屏图片</label>
+            <label class="xiaobao-splash-upload" id="xiaobaoSplashUploadZone" for="xiaobaoSplashUpload">
+              <span class="xiaobao-splash-upload-content">
+                <span class="xiaobao-splash-upload-plus" aria-hidden="true">+</span>
+                <span class="xiaobao-splash-upload-text">点击更换图片</span>
+              </span>
+              <input type="file" id="xiaobaoSplashUpload" accept="image/*" hidden>
+            </label>
           </div>
-        </div>
-        <div class="form-group">
-          <label>Banner / 按钮色（统一）</label>
-          <div class="color-row">
-            <input type="color" id="xiaobaoAccentPick" value="#47abdf">
-            <input id="xiaobaoAccentColor" type="text" value="#47abdf" placeholder="刊号、按钮、首页 Banner">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>刊号 / 期数</label>
-          <div class="inline-issue-row">
-            <input id="xiaobaoVol" type="text" value="VoL." placeholder="VoL." aria-label="刊号">
-            <input id="xiaobaoIssue" type="text" value="18" placeholder="18" aria-label="期数">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="xiaobaoDate">日期</label>
-          <input id="xiaobaoDate" type="text" value="2026/06/12" placeholder="2026/06/12">
-        </div>
-        <div class="form-group">
-          <label for="xiaobaoDateSub">更新说明</label>
-          <input id="xiaobaoDateSub" type="text" value="每周五更新" placeholder="每周五更新">
-        </div>
-        <div class="form-group">
-          <label for="xiaobaoYear">年份（开屏封面）</label>
-          <input id="xiaobaoYear" type="text" value="2026" placeholder="2026">
-        </div>
-        <div class="form-group">
-          <label for="xiaobaoCredit">图片来源</label>
-          <input id="xiaobaoCredit" type="text" value="Shah ོ" placeholder="Shah ོ">
-        </div>
+        </section>
 
-        <div class="export-section">
-          <p class="export-title">导出图片</p>
-          <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
-          <div class="form-group export-format-group">
-            <label>导出格式</label>
-            <div class="export-format-options" id="formatOptionsXiaobao">
-              <button type="button" class="export-format-btn" data-format="png">PNG</button>
-              <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
-              <button type="button" class="export-format-btn" data-format="gif">GIF</button>
+        <section class="form-step" aria-label="STEP.2">
+          <span class="form-step-label">STEP.2</span>
+          <div class="form-group">
+            <label for="xiaobaoTitle">标题一</label>
+            <textarea id="xiaobaoTitle" rows="3" placeholder="华山脚下收麦子，粒粒皆辛苦"></textarea>
+            <p class="fetch-hint">Enter 换行；统一更新除 1080×317 外的尺寸；某尺寸需单独改时在预览中点击该标题编辑</p>
+          </div>
+          <div class="form-group">
+            <label for="xiaobaoTitle2">标题二</label>
+            <textarea id="xiaobaoTitle2" rows="2" placeholder="我发现了幸福的组成公式"></textarea>
+            <p class="fetch-hint">Enter 换行；用于 1080×317；统一更新，需单独改时在预览中点击该标题编辑</p>
+          </div>
+          <div class="form-group">
+            <label>刊号 / 期数</label>
+            <div class="inline-issue-row">
+              <input id="xiaobaoVol" type="text" value="VoL." placeholder="VoL." aria-label="刊号">
+              <input id="xiaobaoIssue" type="text" value="18" placeholder="18" aria-label="期数">
             </div>
           </div>
-          <button type="button" class="export-btn" id="exportE">导出（1242×2688）</button>
-          <button type="button" class="export-btn" id="exportF">导出（1242×2588）</button>
-          <button type="button" class="export-btn" id="exportN">导出（1242×2208）</button>
-          <button type="button" class="export-btn" id="exportG">导出（690×390）</button>
-          <button type="button" class="export-btn" id="exportH">导出（1280×720）</button>
-          <button type="button" class="export-btn" id="exportI">导出（1080×317）</button>
-          <button type="button" class="export-btn" id="exportJ">导出（1125×1500）</button>
-          <button type="button" class="export-btn primary" id="exportAllXiaobao">一键导出</button>
-          <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
-        </div>
+          <div class="form-group">
+            <label for="xiaobaoDate">日期</label>
+            <input id="xiaobaoDate" type="text" value="2026/06/12" placeholder="2026/06/12">
+          </div>
+          <div class="form-group">
+            <label for="xiaobaoYear">年份（开屏封面）</label>
+            <input id="xiaobaoYear" type="text" value="2026" placeholder="2026">
+          </div>
+          <div class="form-group">
+            <label for="xiaobaoCredit">图片来源</label>
+            <input id="xiaobaoCredit" type="text" value="Shah ོ" placeholder="Shah ོ">
+          </div>
+        </section>
+
+        <section class="form-step" aria-label="STEP.3">
+          <span class="form-step-label">STEP.3</span>
+          <div class="export-section">
+            <p class="export-title">导出图片</p>
+            <p class="fetch-hint" style="margin-bottom:8px">导出自动压缩：JPG ≤200KB，PNG ≤300KB</p>
+            <div class="form-group export-format-group">
+              <label>导出格式</label>
+              <div class="export-format-options" id="formatOptionsXiaobao">
+                <button type="button" class="export-format-btn" data-format="png">PNG</button>
+                <button type="button" class="export-format-btn active" data-format="jpg">JPG</button>
+                <button type="button" class="export-format-btn" data-format="gif">GIF</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="xiaobaoExportSelect">单独导出</label>
+              <div class="export-single-row">
+                <select id="xiaobaoExportSelect" class="export-select" aria-label="选择导出尺寸"></select>
+                <button type="button" class="export-btn" id="exportXiaobaoSingle">导出</button>
+              </div>
+            </div>
+            <button type="button" class="export-btn primary" id="exportAllXiaobao">一键导出</button>
+            <p class="fetch-hint" style="margin-top:6px">一键导出将多张图片打包为 ZIP 下载</p>
+          </div>
+        </section>
       </div>
     </aside>
 
@@ -511,7 +646,7 @@
       <div class="preview-panel" data-preview-panel="xiaobao">
         <h2 class="preview-heading">豆瓣社区小报</h2>
         <p class="preview-hint">小报实时预览，基于 Figma 精确还原</p>
-        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击开屏图出现选框，拖拽移动；按住 Shift 水平/垂直平移；拖角落或滚轮缩放；各尺寸开屏图独立调整；点击标题可拖拽移动（Shift 锁定方向）</p>
+        <p class="preview-hint" style="margin-top:-20px;margin-bottom:20px">点击开屏图出现选框，拖拽移动；按住 Shift 水平/垂直平移；拖角落或滚轮缩放；各尺寸开屏图独立调整；左侧标题框统一改同组文字，预览中点击标题可单独改该尺寸（Enter 换行），拖拽四角圆点移动</p>
         <div class="preview-grid" id="previewGridXiaobao"></div>
       </div>
     </section>
@@ -630,10 +765,10 @@
     bgColor: XiaobaoPoster.DEFAULT_BG,
     douColor: XiaobaoPoster.DEFAULT_DOU,
     accentColor: XiaobaoPoster.DEFAULT_ACCENT,
+    colorPreset: 'blue',
     issueNumber: '18',
     volLabel: 'VoL.',
     date: '2026/06/12',
-    dateSubtitle: '每周五更新',
     year: '2026',
     photoCredit: 'Shah ོ',
     heroScale: 100,
@@ -641,6 +776,7 @@
     heroOffsetY: 50,
     heroTransformsBySize: {},
     titleTransformsBySize: {},
+    titleTextBySize: {},
   };
 
   var undoStack = [];
@@ -788,6 +924,101 @@
     return XiaobaoPoster.resolveTitlePosition(xiaobaoState, key, XiaobaoPoster.XIAOBAO_FIGMA[key]);
   }
 
+  var XIAOBAO_TITLE1_KEYS = ['e', 'f', 'n', 'g', 'h'];
+
+  function ensureXiaobaoTitleTextStore() {
+    if (!xiaobaoState.titleTextBySize) xiaobaoState.titleTextBySize = {};
+  }
+
+  function clearXiaobaoTitleOverrides(keys) {
+    ensureXiaobaoTitleTextStore();
+    keys.forEach(function (key) {
+      delete xiaobaoState.titleTextBySize[key];
+    });
+  }
+
+  function applyXiaobaoTitle1Group(text) {
+    xiaobaoState.title = text;
+    clearXiaobaoTitleOverrides(XIAOBAO_TITLE1_KEYS);
+    render();
+  }
+
+  function applyXiaobaoTitle2Group(text) {
+    xiaobaoState.title2 = text;
+    clearXiaobaoTitleOverrides(['i']);
+    render();
+  }
+
+  function defaultXiaobaoTitleText(key) {
+    if (key === 'i') return xiaobaoState.title2 != null ? xiaobaoState.title2 : '';
+    return xiaobaoState.title || '';
+  }
+
+  function getXiaobaoTitleText(key) {
+    if (xiaobaoState.titleTextBySize && xiaobaoState.titleTextBySize[key] != null) {
+      return xiaobaoState.titleTextBySize[key];
+    }
+    return defaultXiaobaoTitleText(key);
+  }
+
+  function syncXiaobaoTitleLayoutForKey(key) {
+    if (key !== 'g' && key !== 'h') return;
+    var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
+    if (!spec || !spec.title) return;
+    var pos = getXiaobaoTitlePosition(key);
+    var hotTop = XiaobaoPoster.resolveHotLabelTop(xiaobaoState, key, spec);
+
+    var mount = document.querySelector('[data-variant-key="' + key + '"]');
+    if (mount) {
+      var titleEl = mount.querySelector('.xiaobao-draggable-title');
+      if (titleEl) {
+        titleEl.style.left = pos.left + 'px';
+        titleEl.style.top = pos.top + 'px';
+      }
+      if (hotTop != null) {
+        var hotEl = mount.querySelector('.xiaobao-hot-label');
+        if (hotEl) hotEl.style.top = hotTop + 'px';
+      }
+    }
+    var node = exportNodes[key];
+    if (node) {
+      var exportTitle = node.querySelector('.xiaobao-draggable-title');
+      if (exportTitle) {
+        exportTitle.style.left = pos.left + 'px';
+        exportTitle.style.top = pos.top + 'px';
+      }
+      if (hotTop != null) {
+        var exportHot = node.querySelector('.xiaobao-hot-label');
+        if (exportHot) exportHot.style.top = hotTop + 'px';
+      }
+    }
+  }
+
+  function syncXiaobaoTitleTextToDom(onlyKey) {
+    XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
+      if (onlyKey && onlyKey !== key) return;
+      var spec = XiaobaoPoster.XIAOBAO_FIGMA[key];
+      if (!spec || !spec.title) return;
+      var html = XiaobaoPoster.formatTitleHtml(getXiaobaoTitleText(key));
+      var mount = document.querySelector('[data-variant-key="' + key + '"]');
+      if (mount) {
+        var titleEl = mount.querySelector('.xiaobao-draggable-title');
+        if (titleEl && !titleEl.classList.contains('title-is-editing')) {
+          titleEl.innerHTML = html;
+        }
+      }
+      var node = exportNodes[key];
+      if (node) {
+        var exportTitle = node.querySelector('.xiaobao-draggable-title');
+        if (exportTitle) exportTitle.innerHTML = html;
+      }
+      syncXiaobaoTitleLayoutForKey(key);
+    });
+    if (window.__titleEditorActive && window.__titleEditorActive.syncBox) {
+      window.__titleEditorActive.syncBox();
+    }
+  }
+
   function syncXiaobaoHeroToExportDom(onlyKey) {
     XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
       if (onlyKey && onlyKey !== key) return;
@@ -822,6 +1053,11 @@
       if (titleEl) {
         titleEl.style.left = pos.left + 'px';
         titleEl.style.top = pos.top + 'px';
+      }
+      var hotTop = XiaobaoPoster.resolveHotLabelTop(xiaobaoState, key, spec);
+      if (hotTop != null) {
+        var hotEl = node.querySelector('.xiaobao-hot-label');
+        if (hotEl) hotEl.style.top = hotTop + 'px';
       }
     });
   }
@@ -863,6 +1099,11 @@
         if (titleEl) {
           titleEl.style.left = pos.left + 'px';
           titleEl.style.top = pos.top + 'px';
+        }
+        var hotTop = XiaobaoPoster.resolveHotLabelTop(xiaobaoState, key, spec);
+        if (hotTop != null) {
+          var hotEl = mount.querySelector('.xiaobao-hot-label');
+          if (hotEl) hotEl.style.top = hotTop + 'px';
         }
       }
 
@@ -967,6 +1208,21 @@
         },
         onChange: function () { syncXiaobaoTitleToDom(key); },
         onInteractionStart: pushUndoSnapshot,
+        enableTextEdit: true,
+        getText: function () {
+          return getXiaobaoTitleText(key);
+        },
+        setText: function (text) {
+          ensureXiaobaoTitleTextStore();
+          var defaultText = defaultXiaobaoTitleText(key);
+          if (text === defaultText) {
+            delete xiaobaoState.titleTextBySize[key];
+          } else {
+            xiaobaoState.titleTextBySize[key] = text;
+          }
+          syncXiaobaoTitleTextToDom(key);
+        },
+        onTextEditStart: pushUndoSnapshot,
       });
     }
   }
@@ -1104,7 +1360,7 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  var exportNodes = { a: null, b: null, c: null, d: null, e: null, f: null, n: null, g: null, h: null, i: null, j: null, k: null, l: null, m: null };
+  var exportNodes = { a: null, b: null, c: null, d: null, e: null, f: null, n: null, g: null, h: null, i: null, p: null, j: null, k: null, l: null, m: null };
 
   function updateTopicGroupCount() {
     var el = document.getElementById('topicGroupCount');
@@ -1196,6 +1452,7 @@
     var gScale = XiaobaoPoster.XIAOBAO_SIZES.g.scale;
     var hScale = XiaobaoPoster.XIAOBAO_SIZES.h.scale;
     var eScale = XiaobaoPoster.XIAOBAO_SIZES.e.scale;
+    var nScale = XiaobaoPoster.XIAOBAO_SIZES.n.scale;
     var gCfg = XiaobaoPoster.XIAOBAO_SIZES.g;
     var lCfg = XiaobaoPoster.XIAOBAO_SIZES.l;
     var mCfg = XiaobaoPoster.XIAOBAO_SIZES.m;
@@ -1206,6 +1463,7 @@
     var jCfg = XiaobaoPoster.XIAOBAO_SIZES.j;
     var kCfg = XiaobaoPoster.XIAOBAO_SIZES.k;
     var iCfg = XiaobaoPoster.XIAOBAO_SIZES.i;
+    var pCfg = XiaobaoPoster.XIAOBAO_SIZES.p;
 
     var layout = el('div', 'xiaobao-main-layout');
     layout.style.setProperty('--gh-gap', (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale) + 'px');
@@ -1214,16 +1472,14 @@
     layout.style.setProperty('--g-scaler-height', (gCfg.height * gScale) + 'px');
     layout.style.setProperty('--hk-gap', (XiaobaoPoster.PREVIEW_ROW_HK.gap * hScale) + 'px');
     layout.style.setProperty('--ki-gap', (XiaobaoPoster.PREVIEW_STACK_KI.gap * hScale) + 'px');
+    layout.style.setProperty('--ip-gap', (XiaobaoPoster.PREVIEW_ROW_IP.gap * hScale) + 'px');
     layout.style.setProperty('--he-gap', (XiaobaoPoster.PREVIEW_STACK_HE.gap * hScale) + 'px');
     layout.style.setProperty('--ef-gap', (XiaobaoPoster.PREVIEW_ROW_EF.gap * eScale) + 'px');
-    var previewLabelH = 25;
-    var jLift = (gCfg.height * gScale) + previewLabelH
-      + (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale)
-      + (hCfg.height * hScale) + previewLabelH
-      + (XiaobaoPoster.PREVIEW_STACK_HE.gap * hScale);
-    layout.style.setProperty('--j-lift', jLift + 'px');
+    layout.style.setProperty('--nj-gap', (XiaobaoPoster.PREVIEW_ROW_NJ.gap * nScale) + 'px');
 
     var leftStack = el('div', 'xiaobao-left-stack');
+    var topSection = el('div', 'xiaobao-top-section');
+    var leftCol = el('div', 'xiaobao-left-col');
 
     var glRow = el('div', 'xiaobao-gl-row');
     glRow.style.setProperty('--gl-gap', (XiaobaoPoster.PREVIEW_ROW_GL.gap * gScale) + 'px');
@@ -1245,7 +1501,7 @@
     lmTrack.appendChild(mWrap);
     lmCol.appendChild(lmTrack);
     glRow.appendChild(lmCol);
-    leftStack.appendChild(glRow);
+    leftCol.appendChild(glRow);
 
     var hkTopRow = el('div', 'xiaobao-h-top-row');
     var hCol = el('div', 'xiaobao-hk-col');
@@ -1268,7 +1524,15 @@
     kiCol.appendChild(iCol);
     hkTopRow.appendChild(kiCol);
     hkTopRow.style.marginTop = (XiaobaoPoster.PREVIEW_STACK_GH.gap * gScale) + 'px';
-    leftStack.appendChild(hkTopRow);
+    leftCol.appendChild(hkTopRow);
+
+    var pCol = el('div', 'xiaobao-hk-col');
+    pCol.appendChild(el('p', 'preview-label', null, pCfg.label));
+    pCol.appendChild(buildXiaobaoPreviewScaler('p'));
+
+    topSection.appendChild(leftCol);
+    topSection.appendChild(pCol);
+    leftStack.appendChild(topSection);
 
     var efRow = el('div', 'xiaobao-ef-row xiaobao-ef-row--below-h');
     var eCol = el('div', 'xiaobao-hk-col');
@@ -1279,16 +1543,17 @@
     fCol.appendChild(el('p', 'preview-label', null, fCfg.label));
     fCol.appendChild(buildXiaobaoPreviewScaler('f'));
     efRow.appendChild(fCol);
-    var jnCol = el('div', 'xiaobao-jn-col');
+    var njCol = el('div', 'xiaobao-nj-col');
+    njCol.style.setProperty('--nj-gap', (XiaobaoPoster.PREVIEW_ROW_NJ.gap * nScale) + 'px');
     var nCol = el('div', 'xiaobao-hk-col');
     nCol.appendChild(el('p', 'preview-label', null, nCfg.label));
     nCol.appendChild(buildXiaobaoPreviewScaler('n'));
-    jnCol.appendChild(nCol);
-    var jCol = el('div', 'xiaobao-hk-col xiaobao-j-col--above-n');
+    njCol.appendChild(nCol);
+    var jCol = el('div', 'xiaobao-hk-col xiaobao-j-side-col');
     jCol.appendChild(el('p', 'preview-label', null, jCfg.label));
     jCol.appendChild(buildXiaobaoPreviewScaler('j'));
-    jnCol.appendChild(jCol);
-    efRow.appendChild(jnCol);
+    njCol.appendChild(jCol);
+    efRow.appendChild(njCol);
     leftStack.appendChild(efRow);
 
     layout.appendChild(leftStack);
@@ -1312,7 +1577,7 @@
     renderXiaobaoMainLayout(ghColumn);
     grid.appendChild(ghColumn);
     XiaobaoPoster.PREVIEW_KEYS.forEach(function (key) {
-      if (key === 'g' || key === 'h' || key === 'e' || key === 'f' || key === 'n' || key === 'j' || key === 'l' || key === 'm' || key === 'k' || key === 'i') return;
+      if (key === 'g' || key === 'h' || key === 'e' || key === 'f' || key === 'n' || key === 'j' || key === 'l' || key === 'm' || key === 'k' || key === 'i' || key === 'p') return;
       appendXiaobaoPreviewItem(grid, key);
     });
     XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
@@ -1322,6 +1587,7 @@
   }
 
   function render() {
+    ensureXiaobaoTitleTextStore();
     var layer = document.getElementById('exportLayer');
     layer.innerHTML = '';
     renderGroupPreview(document.getElementById('previewGridGroup'));
@@ -1373,16 +1639,10 @@
   function syncXiaobaoInputs() {
     document.getElementById('xiaobaoTitle').value = xiaobaoState.title;
     document.getElementById('xiaobaoTitle2').value = xiaobaoState.title2;
-    document.getElementById('xiaobaoBgColor').value = xiaobaoState.bgColor;
-    document.getElementById('xiaobaoBgPick').value = xiaobaoState.bgColor;
-    document.getElementById('xiaobaoDouColor').value = xiaobaoState.douColor;
-    document.getElementById('xiaobaoDouPick').value = xiaobaoState.douColor;
-    document.getElementById('xiaobaoAccentColor').value = xiaobaoState.accentColor;
-    document.getElementById('xiaobaoAccentPick').value = xiaobaoState.accentColor;
+    syncXiaobaoColorPresetUi();
     document.getElementById('xiaobaoIssue').value = xiaobaoState.issueNumber;
     document.getElementById('xiaobaoVol').value = xiaobaoState.volLabel;
     document.getElementById('xiaobaoDate').value = xiaobaoState.date;
-    document.getElementById('xiaobaoDateSub').value = xiaobaoState.dateSubtitle;
     document.getElementById('xiaobaoYear').value = xiaobaoState.year;
     document.getElementById('xiaobaoCredit').value = xiaobaoState.photoCredit;
   }
@@ -1785,6 +2045,9 @@
   }
 
   function getCaptureBackgroundColor(node) {
+    if (node && node.classList && node.classList.contains('xiaobao-head')) {
+      return 'transparent';
+    }
     if (node && node.classList && node.classList.contains('xiaobao-home-banner')) {
       return node.style.backgroundColor || JPEG_BG;
     }
@@ -1795,6 +2058,10 @@
     assertExportReady();
     var opts = getCaptureOptions(width, height, pixelRatio);
     var captureBg = getCaptureBackgroundColor(node);
+    var isTransparentHead = node && node.classList && node.classList.contains('xiaobao-head');
+    if (isTransparentHead && format !== 'jpg') {
+      opts = Object.assign({}, opts, { backgroundColor: 'transparent' });
+    }
     if (format === 'gif') {
       return htmlToImage.toCanvas(node, opts).then(function (canvas) {
         return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
@@ -1803,13 +2070,14 @@
       });
     }
     if (format === 'jpg' && htmlToImage.toJpeg) {
-      var jpegOpts = Object.assign({}, opts, { quality: JPG_EXPORT_QUALITY, backgroundColor: captureBg });
+      var jpegBg = isTransparentHead ? JPEG_BG : captureBg;
+      var jpegOpts = Object.assign({}, opts, { quality: JPG_EXPORT_QUALITY, backgroundColor: jpegBg });
       return htmlToImage.toJpeg(node, jpegOpts).then(function (jpgUrl) {
         if (getDataUrlByteSize(jpgUrl) <= MAX_JPEG_BYTES) {
           return { dataUrl: jpgUrl, format: 'jpg' };
         }
         return htmlToImage.toPng(node, opts).then(function (pngUrl) {
-          return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, captureBg).then(function (jpg) {
+          return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, jpegBg).then(function (jpg) {
             return { dataUrl: jpg, format: 'jpg' };
           });
         });
@@ -1817,7 +2085,7 @@
     }
     return htmlToImage.toPng(node, opts).then(function (pngUrl) {
       if (format === 'jpg') {
-        return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, captureBg).then(function (jpg) {
+        return fitJpegUnderLimit(pngUrl, MAX_JPEG_BYTES, isTransparentHead ? JPEG_BG : captureBg).then(function (jpg) {
           return { dataUrl: jpg, format: 'jpg' };
         });
       }
@@ -1938,7 +2206,8 @@
       return mapWithConcurrency(validKeys, BATCH_CAPTURE_CONCURRENCY, function (key) {
         var node = exportNodes[key];
         var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
-        return capturePosterDataUrl(node, cfg.width, cfg.height, exportFormat, BATCH_EXPORT_PIXEL_RATIO).then(function (result) {
+        var format = key === 'p' ? 'png' : exportFormat;
+        return capturePosterDataUrl(node, cfg.width, cfg.height, format, BATCH_EXPORT_PIXEL_RATIO).then(function (result) {
           completed += 1;
           setBatchExportProgress(progressBtnId, completed, total);
           return { cfg: cfg, result: result };
@@ -1961,12 +2230,28 @@
 
   function setExportDisabled(disabled) {
     ['exportA','exportB','exportC','exportD','exportAllGroup','exportAllTopic',
-      'exportE','exportF','exportN','exportG','exportH','exportI','exportJ','exportAllXiaobao'].forEach(function (id) {
+      'exportXiaobaoSingle','exportAllXiaobao'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.disabled = disabled;
     });
+    var xiaobaoSelect = document.getElementById('xiaobaoExportSelect');
+    if (xiaobaoSelect) xiaobaoSelect.disabled = disabled;
     document.querySelectorAll('.export-format-btn').forEach(function (btn) {
       btn.disabled = disabled;
+    });
+  }
+
+  function initXiaobaoExportSelect() {
+    var select = document.getElementById('xiaobaoExportSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    XiaobaoPoster.EXPORT_KEYS.forEach(function (key) {
+      var cfg = XiaobaoPoster.XIAOBAO_SIZES[key];
+      if (!cfg) return;
+      var option = document.createElement('option');
+      option.value = key;
+      option.textContent = cfg.label;
+      select.appendChild(option);
     });
   }
 
@@ -2130,19 +2415,75 @@
   }
   bindGradientInput('gradientColor', 'gradientColorPick', 'gradientColor');
   bindGradientInput('badgeColor', 'badgeColorPick', 'badgeColor');
-  bindGradientInput('xiaobaoBgColor', 'xiaobaoBgPick', 'bgColor', xiaobaoState);
-  bindGradientInput('xiaobaoDouColor', 'xiaobaoDouPick', 'douColor', xiaobaoState);
-  bindGradientInput('xiaobaoAccentColor', 'xiaobaoAccentPick', 'accentColor', xiaobaoState);
+
+  var XIAOBAO_COLOR_PRESETS = [
+    { id: 'blue', bgColor: '#cff3ff', douColor: '#C2E4FF', accentColor: '#47abdf' },
+    { id: 'green', bgColor: '#f2ffb0', douColor: '#B9F68B', accentColor: '#7edb10' },
+    { id: 'purple', bgColor: '#ede8ff', douColor: '#F0D4FF', accentColor: '#a17ae4' },
+    { id: 'pink', bgColor: '#ffebe6', douColor: '#FFD3ED', accentColor: '#f37b9f' },
+  ];
+
+  function normalizeHexColor(value) {
+    return String(value || '').trim().toLowerCase().replace(/^#/, '');
+  }
+
+  function inferXiaobaoColorPreset(state) {
+    if (state.colorPreset) return state.colorPreset;
+    var bg = normalizeHexColor(state.bgColor);
+    var dou = normalizeHexColor(state.douColor);
+    var accent = normalizeHexColor(state.accentColor);
+    for (var i = 0; i < XIAOBAO_COLOR_PRESETS.length; i++) {
+      var preset = XIAOBAO_COLOR_PRESETS[i];
+      if (
+        normalizeHexColor(preset.bgColor) === bg &&
+        normalizeHexColor(preset.douColor) === dou &&
+        normalizeHexColor(preset.accentColor) === accent
+      ) {
+        return preset.id;
+      }
+    }
+    return '';
+  }
+
+  function applyXiaobaoColorPreset(presetId) {
+    var preset = null;
+    for (var i = 0; i < XIAOBAO_COLOR_PRESETS.length; i++) {
+      if (XIAOBAO_COLOR_PRESETS[i].id === presetId) {
+        preset = XIAOBAO_COLOR_PRESETS[i];
+        break;
+      }
+    }
+    if (!preset) return;
+    xiaobaoState.bgColor = preset.bgColor;
+    xiaobaoState.douColor = preset.douColor;
+    xiaobaoState.accentColor = preset.accentColor;
+    xiaobaoState.colorPreset = preset.id;
+    syncXiaobaoColorPresetUi();
+    render();
+  }
+
+  function syncXiaobaoColorPresetUi() {
+    var activeId = inferXiaobaoColorPreset(xiaobaoState);
+    document.querySelectorAll('.xiaobao-color-preset').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.preset === activeId);
+    });
+  }
+
+  document.getElementById('xiaobaoColorPresets').addEventListener('click', function (e) {
+    var btn = e.target.closest('.xiaobao-color-preset');
+    if (!btn || !btn.dataset.preset) return;
+    if (btn.dataset.preset === inferXiaobaoColorPreset(xiaobaoState)) return;
+    pushUndoSnapshot();
+    applyXiaobaoColorPreset(btn.dataset.preset);
+  });
 
   document.getElementById('xiaobaoTitle').addEventListener('input', function (e) {
     pushUndoSnapshot();
-    xiaobaoState.title = e.target.value;
-    render();
+    applyXiaobaoTitle1Group(e.target.value);
   });
   document.getElementById('xiaobaoTitle2').addEventListener('input', function (e) {
     pushUndoSnapshot();
-    xiaobaoState.title2 = e.target.value;
-    render();
+    applyXiaobaoTitle2Group(e.target.value);
   });
   document.getElementById('xiaobaoIssue').addEventListener('input', function (e) {
     pushUndoSnapshot();
@@ -2157,11 +2498,6 @@
   document.getElementById('xiaobaoDate').addEventListener('input', function (e) {
     pushUndoSnapshot();
     xiaobaoState.date = e.target.value;
-    render();
-  });
-  document.getElementById('xiaobaoDateSub').addEventListener('input', function (e) {
-    pushUndoSnapshot();
-    xiaobaoState.dateSubtitle = e.target.value;
     render();
   });
   document.getElementById('xiaobaoYear').addEventListener('input', function (e) {
@@ -2249,13 +2585,11 @@
   document.getElementById('exportD').addEventListener('click', function () { exportPoster('d'); });
   document.getElementById('exportAllGroup').addEventListener('click', function () { exportAllKeys(['a', 'b'], 'exportAllGroup'); });
   document.getElementById('exportAllTopic').addEventListener('click', function () { exportAllKeys(['c', 'd'], 'exportAllTopic'); });
-  document.getElementById('exportE').addEventListener('click', function () { exportPoster('e'); });
-  document.getElementById('exportF').addEventListener('click', function () { exportPoster('f'); });
-  document.getElementById('exportN').addEventListener('click', function () { exportPoster('n'); });
-  document.getElementById('exportG').addEventListener('click', function () { exportPoster('g'); });
-  document.getElementById('exportH').addEventListener('click', function () { exportPoster('h'); });
-  document.getElementById('exportI').addEventListener('click', function () { exportPoster('i'); });
-  document.getElementById('exportJ').addEventListener('click', function () { exportPoster('j'); });
+  initXiaobaoExportSelect();
+  document.getElementById('exportXiaobaoSingle').addEventListener('click', function () {
+    var key = document.getElementById('xiaobaoExportSelect').value;
+    if (key) exportPoster(key);
+  });
   document.getElementById('exportAllXiaobao').addEventListener('click', function () { exportAllKeys(XiaobaoPoster.EXPORT_KEYS, 'exportAllXiaobao'); });
 
   (function updateFetchHint() {

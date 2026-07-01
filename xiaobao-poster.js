@@ -7,6 +7,8 @@
 
   var ISSUE_NUM_OPTICAL_X = -1;
   var ISSUE_NUM_OPTICAL_Y = -3;
+  var TITLE_CENTER_KEYS = { g: true, h: true };
+  var _titleMeasureCanvas = null;
 
   var ASSETS = {
     douWatermark: '/xiaobao/dou-watermark.png',
@@ -17,18 +19,42 @@
     doumao: '/xiaobao/doumao.png',
     creditIcon: '/xiaobao/credit-icon.png',
     defaultSplash: '/xiaobao/banner-doumao.png',
+    headTitleLogo: '/xiaobao/head-title-logo.svg?v=4',
+    headDoubanLogo: '/xiaobao/head-douban-logo.png?v=2',
   };
 
   var DEFAULT_BG = '#cff3ff';
-  var DEFAULT_DOU = '#98e2fb';
+  var DEFAULT_DOU = '#C2E4FF';
   var DEFAULT_ACCENT = '#47abdf';
 
   var XIAOBAO_FIGMA = {
+    /** 1125×811 头图 Figma 215:69（透明底） */
+    p: {
+      frame: { width: 1125, height: 811 },
+      transparentBg: true,
+      dou: { left: -183, top: -61, width: 1492, height: 896, opacity: 1 },
+      titleLogo: { left: 45, top: 341, width: 683, height: 281, src: ASSETS.headTitleLogo, zIndex: 2 },
+      badgeLogo: { left: 51, top: 251, width: 137, height: 59, src: ASSETS.headDoubanLogo, zIndex: 3 },
+      issue: {
+        left: 938, top: 338, width: 142, height: 175,
+        circle: 140, circleWidth: 142, circleHeight: 140,
+        number: {
+          left: 23, top: 1, width: 95, height: 124,
+          fontSize: 88, lineHeight: 123.2, letterSpacing: -3,
+          fontFamily: FONT_SERIF, fontWeight: 500,
+        },
+        vol: {
+          left: 37, top: 144, width: 68, height: 32,
+          fontSize: 33, lineHeight: 32, fontWeight: 500,
+          fontFamily: FONT_SANS,
+        },
+      },
+    },
     /** 开屏 1242×2688 */
     e: {
       frame: { width: 1242, height: 2688 },
       bg: { top: -44, height: 2808 },
-      dou: { left: -124, top: 41, width: 1449, height: 870, opacity: 0.3 },
+      dou: { left: -124, top: 41, width: 1449, height: 870, opacity: 0.6 },
       splash: { left: 0, top: 941, width: 1242, height: 1771 },
       logo: { left: 42, top: 221, width: 238, height: 168 },
       issue: {
@@ -62,7 +88,7 @@
     f: {
       frame: { width: 1242, height: 2588 },
       bg: { top: -20, height: 2510 },
-      dou: { left: -71, top: 76, width: 1384, height: 831, opacity: 0.3 },
+      dou: { left: -71, top: 76, width: 1384, height: 831, opacity: 0.6 },
       splash: { left: 0, top: 941, width: 1242, height: 1676 },
       logo: { left: 41, top: 222, width: 238, height: 168 },
       issue: {
@@ -96,7 +122,7 @@
     n: {
       frame: { width: 1242, height: 2208 },
       bg: { top: -20, height: 2510 },
-      dou: { left: -71, top: 76, width: 1384, height: 831, opacity: 0.3 },
+      dou: { left: -71, top: 76, width: 1384, height: 831, opacity: 0.6 },
       splash: { left: 0, top: 947, width: 1242, height: 1669 },
       logo: { left: 41, top: 223, width: 238, height: 168 },
       issue: {
@@ -130,7 +156,7 @@
     g: {
       frame: { width: 690, height: 390 },
       bg: { top: 0, height: 390 },
-      dou: { left: -119, top: 1, width: 586, height: 352, opacity: 0.3 },
+      dou: { left: -119, top: 1, width: 586, height: 352, opacity: 0.6 },
       splash: { left: 350, top: 0, width: 340, height: 390 },
       logo: { left: 16, top: 26, width: 96, height: 69 },
       volInline: {
@@ -158,7 +184,7 @@
     h: {
       frame: { width: 1280, height: 720 },
       bg: { top: 0, height: 720 },
-      dou: { left: -237, top: 0, width: 1102, height: 662, opacity: 0.3 },
+      dou: { left: -237, top: 0, width: 1102, height: 662, opacity: 0.6 },
       splash: { left: 640, top: 0, width: 640, height: 720 },
       logo: { left: 31, top: 40, width: 189, height: 136 },
       volInline: {
@@ -166,6 +192,7 @@
         volSize: 48, numSize: 48, lineHeight: 48, fontWeight: 400,
       },
       hotLabel: { left: 31, top: 236, width: 185, height: 55, fontSize: 42, lineHeight: 55 },
+      hotTitleGap: 12,
       title: {
         left: 28, top: 303, width: 624, height: 184,
         fontSize: 78, fontWeight: 700, lineHeight: 92, letterSpacing: 0,
@@ -183,7 +210,7 @@
     i: {
       frame: { width: 1080, height: 317 },
       bg: { top: 0, height: 317 },
-      dou: { left: -63, top: -288, width: 1143, height: 686, opacity: 0.3 },
+      dou: { left: -63, top: -288, width: 1143, height: 686, opacity: 0.6 },
       logoSmall: { left: 32, top: 21, width: 104, height: 45 },
       hotLabel: { left: 462, top: 43, width: 156, height: 52, fontSize: 36, lineHeight: 52 },
       title: {
@@ -239,14 +266,14 @@
     l: {
       frame: { width: 150, height: 150 },
       bg: { top: 0, height: 150 },
-      dou: { left: -53, top: 0, width: 234, height: 140, opacity: 0.3 },
+      dou: { left: -53, top: 0, width: 234, height: 140, opacity: 0.6 },
       logo: { left: 15, top: 34, width: 121, height: 83 },
     },
     /** 225×150 图标 */
     m: {
       frame: { width: 225, height: 150 },
       bg: { top: 0, height: 150, left: -4, width: 241 },
-      dou: { left: -4, top: -2, width: 234, height: 140, opacity: 0.3 },
+      dou: { left: -4, top: -2, width: 234, height: 140, opacity: 0.6 },
       logo: { left: 36, top: 27, width: 154, height: 96 },
     },
   };
@@ -258,6 +285,7 @@
     g: { width: 690, height: 390, exportName: 'xiaobao-690x390', label: '690×390', scale: 0.42 },
     h: { width: 1280, height: 720, exportName: 'xiaobao-1280x720', label: '1280×720', scale: 0.38 },
     i: { width: 1080, height: 317, exportName: 'xiaobao-1080x317', label: '1080×317', scale: 0.38 },
+    p: { width: 1125, height: 811, exportName: 'xiaobao-1125x811', label: '1125×811', scale: 0.38 },
     j: { width: 1125, height: 1500, exportName: 'xiaobao-1125x1500', label: '1125×1500', scale: 0.38 },
     k: { width: 690, height: 228, exportName: 'xiaobao-690x228', label: '690×228', scale: 0.38 },
     l: { width: 150, height: 150, exportName: 'xiaobao-150x150', label: '150×150', scale: 0.42 },
@@ -279,7 +307,7 @@
     return node;
   }
 
-  function resolveTitlePosition(data, key, spec) {
+  function resolveTitleBasePosition(data, key, spec) {
     if (data.titleTransformsBySize && data.titleTransformsBySize[key]) {
       return data.titleTransformsBySize[key];
     }
@@ -288,6 +316,103 @@
     }
     if (!spec.title) return null;
     return { left: spec.title.left, top: spec.title.top };
+  }
+
+  function getTitleMeasureContext(fontSize, fontWeight) {
+    if (!_titleMeasureCanvas) _titleMeasureCanvas = document.createElement('canvas');
+    var ctx = _titleMeasureCanvas.getContext('2d');
+    ctx.font = (fontWeight || 700) + ' ' + fontSize + 'px ' + FONT_SANS;
+    return ctx;
+  }
+
+  function countRenderedTitleLines(text, titleSpec) {
+    if (!titleSpec) return 1;
+    var fontSize = titleSpec.fontSize;
+    var fontWeight = titleSpec.fontWeight || 700;
+    var maxWidth = titleSpec.width;
+    var ctx = getTitleMeasureContext(fontSize, fontWeight);
+    var paragraphs = String(text || '').replace(/\\n/g, '\n').split(/\r?\n/);
+    var total = 0;
+    paragraphs.forEach(function (para) {
+      if (!para) {
+        total += 1;
+        return;
+      }
+      var line = '';
+      for (var i = 0; i < para.length; i++) {
+        var ch = para.charAt(i);
+        var next = line + ch;
+        if (line && ctx.measureText(next).width > maxWidth) {
+          total += 1;
+          line = ch;
+        } else {
+          line = next;
+        }
+      }
+      if (line) total += 1;
+    });
+    return Math.max(1, total);
+  }
+
+  function getHeaderBottom(spec, key) {
+    if (!spec.logo) return 0;
+    var bottom = spec.logo.top + spec.logo.height;
+    if (spec.issue) {
+      bottom = Math.max(bottom, spec.issue.top + spec.issue.height);
+    }
+    if (spec.volInline && key !== 'h') {
+      bottom = Math.max(bottom, spec.volInline.top + spec.volInline.height);
+    }
+    return bottom;
+  }
+
+  function getContentBandBottom(spec, key) {
+    if (key === 'h' && spec.volInline) return spec.volInline.top;
+    if (key === 'g' && spec.button) return spec.button.top;
+    return null;
+  }
+
+  function resolveCenteredContentLayout(data, key, spec) {
+    if (!TITLE_CENTER_KEYS[key] || !spec || !spec.title) return null;
+    var bandTop = getHeaderBottom(spec, key);
+    var bandBottom = getContentBandBottom(spec, key);
+    if (bandBottom == null || bandBottom <= bandTop) return null;
+
+    var titleText = resolveTitleText(data, key);
+    var titleLines = countRenderedTitleLines(titleText, spec.title);
+    var titleLineHeight = spec.title.lineHeight || spec.title.fontSize;
+    var titleHeight = titleLines * titleLineHeight;
+    var bandHeight = bandBottom - bandTop;
+
+    if (key === 'h' && spec.hotLabel) {
+      var hotHeight = spec.hotLabel.lineHeight || spec.hotLabel.height || 55;
+      var gap = spec.hotTitleGap != null ? spec.hotTitleGap : 12;
+      var stackHeight = hotHeight + gap + titleHeight;
+      var stackTop = bandTop + (bandHeight - stackHeight) / 2;
+      return { hotTop: stackTop, titleTop: stackTop + hotHeight + gap };
+    }
+
+    return { hotTop: null, titleTop: bandTop + (bandHeight - titleHeight) / 2 };
+  }
+
+  function resolveTitlePosition(data, key, spec) {
+    var base = resolveTitleBasePosition(data, key, spec);
+    if (!base) return null;
+    var hasCustomPos = !!(data.titleTransformsBySize && data.titleTransformsBySize[key]);
+    if (hasCustomPos) return base;
+    var centered = resolveCenteredContentLayout(data, key, spec);
+    if (centered) return { left: base.left, top: centered.titleTop };
+    return { left: base.left, top: base.top };
+  }
+
+  function resolveHotLabelTop(data, key, spec) {
+    if (!spec || !spec.hotLabel) return null;
+    if (data.titleTransformsBySize && data.titleTransformsBySize[key]) {
+      return spec.hotLabel.top;
+    }
+    var centered = resolveCenteredContentLayout(data, key, spec);
+    if (centered && centered.hotTop != null) return centered.hotTop;
+    return spec.hotLabel.top;
   }
 
   function resolveBg(data) {
@@ -346,7 +471,17 @@
     return data.douColor || data.bgColor || DEFAULT_BG;
   }
 
-  function buildBgAndDou(spec, bgColor, douColor) {
+  function resolveDouOpacity(data, key, douSpec) {
+    if (key === 'p') {
+      return douSpec.opacity != null ? douSpec.opacity : 1;
+    }
+    if (data && data.colorPreset === 'blue') {
+      return 0.6;
+    }
+    return douSpec.opacity != null ? douSpec.opacity : 0.6;
+  }
+
+  function buildBgAndDou(spec, bgColor, douColor, data, key) {
     var parts = [];
     if (spec.bg) {
       var bg = spec.bg;
@@ -369,7 +504,7 @@
         top: d.top + 'px',
         width: d.width + 'px',
         height: d.height + 'px',
-        opacity: String(d.opacity != null ? d.opacity : 0.3),
+        opacity: String(resolveDouOpacity(data, key, d)),
         zIndex: '1',
         overflow: 'hidden',
         pointerEvents: 'none',
@@ -394,6 +529,9 @@
   }
 
   function resolveTitleText(data, key) {
+    if (data.titleTextBySize && data.titleTextBySize[key] != null) {
+      return data.titleTextBySize[key];
+    }
     if (key === 'i') return data.title2 != null ? data.title2 : '';
     return data.title || '';
   }
@@ -564,13 +702,6 @@
       letterSpacing: '-0.85px',
       fontWeight: '400',
     }, data.date || '2026/06/12'));
-    wrap.appendChild(el('div', '', {
-      fontSize: d.subSize + 'px',
-      lineHeight: d.lineHeight + 'px',
-      letterSpacing: '-0.72px',
-      fontWeight: '400',
-      marginTop: (d.subGap != null ? d.subGap : 3) + 'px',
-    }, data.dateSubtitle || '每周五更新'));
     return wrap;
   }
 
@@ -687,13 +818,14 @@
     return btn;
   }
 
-  function buildHotLabel(spec) {
+  function buildHotLabel(spec, data, key) {
     if (!spec.hotLabel) return null;
     var h = spec.hotLabel;
+    var top = resolveHotLabelTop(data, key, spec);
     var styles = {
       position: 'absolute',
       left: h.left + 'px',
-      top: h.top + 'px',
+      top: top + 'px',
       fontSize: h.fontSize + 'px',
       fontWeight: '700',
       lineHeight: h.lineHeight + 'px',
@@ -909,6 +1041,49 @@
     return parts.filter(Boolean);
   }
 
+  function buildHeadPoster(spec, data) {
+    var transparent = spec.transparentBg !== false;
+    var card = el('div', 'poster-card xiaobao-poster xiaobao-head poster-font', {
+      width: spec.frame.width + 'px',
+      height: spec.frame.height + 'px',
+      position: 'relative',
+      overflow: 'hidden',
+      background: transparent ? 'transparent' : (spec.bgColor || '#ffffff'),
+    });
+    buildBgAndDou(spec, null, resolveDouColor(data), data, 'p').forEach(function (node) {
+      card.appendChild(node);
+    });
+    if (spec.titleLogo) {
+      var tl = spec.titleLogo;
+      card.appendChild(buildImgAsset(tl.src || ASSETS.headTitleLogo, 'xiaobao-head-title-logo', {
+        position: 'absolute',
+        left: tl.left + 'px',
+        top: tl.top + 'px',
+        width: tl.width + 'px',
+        height: tl.height + 'px',
+        objectFit: 'contain',
+        display: 'block',
+        zIndex: String(tl.zIndex != null ? tl.zIndex : 2),
+      }));
+    }
+    if (spec.badgeLogo) {
+      var bl = spec.badgeLogo;
+      card.appendChild(buildImgAsset(bl.src || ASSETS.headDoubanLogo, 'xiaobao-head-badge-logo', {
+        position: 'absolute',
+        left: bl.left + 'px',
+        top: bl.top + 'px',
+        width: bl.width + 'px',
+        height: bl.height + 'px',
+        objectFit: 'contain',
+        display: 'block',
+        zIndex: String(bl.zIndex != null ? bl.zIndex : 3),
+      }));
+    }
+    var issueEl = buildIssueBadge(spec, data);
+    if (issueEl) card.appendChild(issueEl);
+    return card;
+  }
+
   function buildHomeBanner(spec, accent) {
     var card = el('div', 'xiaobao-home-banner', {
       width: spec.frame.width + 'px',
@@ -937,7 +1112,7 @@
     return card;
   }
 
-  function buildIconPoster(spec, bgColor, douColor) {
+  function buildIconPoster(spec, bgColor, douColor, data, key) {
     var w = spec.frame.width;
     var h = spec.frame.height;
     var card = el('div', 'poster-card xiaobao-poster xiaobao-icon poster-font', {
@@ -946,7 +1121,7 @@
       position: 'relative',
       overflow: 'hidden',
     });
-    buildBgAndDou(spec, bgColor, douColor).forEach(function (node) { card.appendChild(node); });
+    buildBgAndDou(spec, bgColor, douColor, data, key).forEach(function (node) { card.appendChild(node); });
     var logo = buildLogo(spec);
     if (logo) card.appendChild(logo);
     if (spec.logoSmall) {
@@ -970,7 +1145,8 @@
     if (!spec) throw new Error('未知小报模板：' + key);
 
     if (key === 'k') return buildHomeBanner(spec, resolveAccent(data));
-    if (key === 'l' || key === 'm') return buildIconPoster(spec, resolveBg(data), resolveDouColor(data));
+    if (key === 'p') return buildHeadPoster(spec, data);
+    if (key === 'l' || key === 'm') return buildIconPoster(spec, resolveBg(data), resolveDouColor(data), data, key);
 
     if (key === 'j') {
       var cover = el('div', 'poster-card xiaobao-poster xiaobao-cover poster-font', {
@@ -997,7 +1173,7 @@
       background: bgColor,
     });
 
-    buildBgAndDou(spec, bgColor, douColor).forEach(function (node) { card.appendChild(node); });
+    buildBgAndDou(spec, bgColor, douColor, data, key).forEach(function (node) { card.appendChild(node); });
 
     [
       buildSplashLayer(spec, data, key, w, h),
@@ -1005,7 +1181,7 @@
       buildIssueBadge(spec, data, accent),
       buildVolInline(spec, data, accent),
       buildDateBlock(spec, data),
-      buildHotLabel(spec),
+      buildHotLabel(spec, data, key),
       buildTitle(spec, data, key),
       buildButton(spec, accent),
       buildVolBar(spec, data),
@@ -1034,7 +1210,10 @@
 
   function getSplashSpec(key) {
     var spec = XIAOBAO_FIGMA[key];
-    return spec && spec.splash ? spec.splash : null;
+    if (!spec) return null;
+    if (spec.splash) return spec.splash;
+    if (spec.photo) return spec.photo;
+    return null;
   }
 
   global.XiaobaoPoster = {
@@ -1048,15 +1227,20 @@
     buildXiaobaoPoster: buildXiaobaoPoster,
     getSplashSpec: getSplashSpec,
     resolveTitlePosition: resolveTitlePosition,
+    resolveHotLabelTop: resolveHotLabelTop,
+    resolveTitleText: resolveTitleText,
+    formatTitleHtml: formatTitleHtml,
     applySplashTransform: applySplashTransform,
-    EXPORT_KEYS: ['e', 'f', 'n', 'g', 'h', 'i', 'j', 'k', 'l', 'm'],
-    PREVIEW_KEYS: ['g', 'h', 'e', 'f', 'n', 'j', 'l', 'm', 'k', 'i'],
+    EXPORT_KEYS: ['e', 'f', 'n', 'g', 'h', 'i', 'p', 'j', 'k', 'l', 'm'],
+    PREVIEW_KEYS: ['g', 'h', 'e', 'f', 'n', 'j', 'l', 'm', 'k', 'i', 'p'],
     PREVIEW_STACK_GH: { gap: 50 },
     PREVIEW_ROW_GL: { gap: 70 },
     PREVIEW_ROW_HK: { gap: 70 },
+    PREVIEW_ROW_IP: { gap: 70 },
     PREVIEW_STACK_KI: { gap: 100 },
     PREVIEW_STACK_HE: { gap: 300 },
     PREVIEW_ROW_EF: { gap: 108 },
+    PREVIEW_ROW_NJ: { gap: 108 },
     PREVIEW_ROW_IJ: { gap: 70 },
     PREVIEW_STACK_LM: { gap: 50 },
   };
