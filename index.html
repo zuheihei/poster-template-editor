@@ -270,9 +270,28 @@
       border-color: #47abdf;
       box-shadow: 0 0 0 2px rgba(71, 171, 223, 0.18);
     }
-    .xiaobao-color-preset-swatches { display: flex; gap: 4px; height: 28px; border-radius: 6px; overflow: hidden; }
-    .xiaobao-color-preset-swatches span { flex: 1; }
-    .xiaobao-color-preset-label { font-size: 12px; color: #666; line-height: 1; }
+    .xiaobao-color-preset-swatches { display: flex; gap: 4px; }
+    .xiaobao-color-swatch {
+      flex: 1; min-width: 0; position: relative;
+      padding: 0; border: none; background: none; cursor: pointer;
+      border-radius: 4px; overflow: hidden; font: inherit; text-align: center;
+    }
+    .xiaobao-color-swatch:hover { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); }
+    .xiaobao-color-swatch-fill { height: 28px; width: 100%; display: block; }
+    .xiaobao-color-swatch-badge {
+      position: absolute; top: 0; right: 0; z-index: 1;
+      padding: 1px 4px; font-size: 9px; line-height: 1.25; font-weight: 600;
+      color: #fff; background: rgba(0,0,0,0.72);
+      border-radius: 0 4px 0 4px;
+      opacity: 0; transform: scale(0.88); transform-origin: top right;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .xiaobao-color-swatch.copied { box-shadow: inset 0 0 0 2px #47abdf; }
+    .xiaobao-color-swatch.copied .xiaobao-color-swatch-badge {
+      opacity: 1; transform: scale(1);
+    }
+    .xiaobao-color-preset-label { font-size: 12px; color: #666; line-height: 1; margin-top: 2px; }
     .xiaobao-color-preset-hint { font-size: 11px; color: #999; margin-top: 6px; line-height: 1.4; }
     .form-step {
       margin-bottom: 24px;
@@ -522,49 +541,8 @@
           <span class="form-step-label">STEP.1</span>
           <div class="form-group">
             <label>配色方案</label>
-            <div class="xiaobao-color-presets" id="xiaobaoColorPresets">
-              <button type="button" class="xiaobao-color-preset active" data-preset="blue" aria-label="蓝色配色">
-                <div class="xiaobao-color-preset-swatches">
-                  <span style="background:#cff3ff"></span>
-                  <span style="background:#C2E4FF"></span>
-                  <span style="background:#47abdf"></span>
-                </div>
-                <span class="xiaobao-color-preset-label">蓝色</span>
-              </button>
-              <button type="button" class="xiaobao-color-preset" data-preset="green" aria-label="绿色配色">
-                <div class="xiaobao-color-preset-swatches">
-                  <span style="background:#f2ffb0"></span>
-                  <span style="background:#B9F68B"></span>
-                  <span style="background:#7edb10"></span>
-                </div>
-                <span class="xiaobao-color-preset-label">绿色</span>
-              </button>
-              <button type="button" class="xiaobao-color-preset" data-preset="purple" aria-label="紫色配色">
-                <div class="xiaobao-color-preset-swatches">
-                  <span style="background:#ede8ff"></span>
-                  <span style="background:#F0D4FF"></span>
-                  <span style="background:#a17ae4"></span>
-                </div>
-                <span class="xiaobao-color-preset-label">紫色</span>
-              </button>
-              <button type="button" class="xiaobao-color-preset" data-preset="pink" aria-label="粉色配色">
-                <div class="xiaobao-color-preset-swatches">
-                  <span style="background:#ffebe6"></span>
-                  <span style="background:#FFD3ED"></span>
-                  <span style="background:#f37b9f"></span>
-                </div>
-                <span class="xiaobao-color-preset-label">粉色</span>
-              </button>
-              <button type="button" class="xiaobao-color-preset" data-preset="yellow" aria-label="黄色配色">
-                <div class="xiaobao-color-preset-swatches">
-                  <span style="background:#FFF5DA"></span>
-                  <span style="background:#FFECB9"></span>
-                  <span style="background:#F4A103"></span>
-                </div>
-                <span class="xiaobao-color-preset-label">黄色</span>
-              </button>
-            </div>
-            <p class="xiaobao-color-preset-hint">点击一组配色，自动设置背景、Dou 与 Banner / 按钮色</p>
+            <div class="xiaobao-color-presets" id="xiaobaoColorPresets"></div>
+            <p class="xiaobao-color-preset-hint">点击鼠标右键色块复制色号；点击鼠标左键卡片切换配色（背景 / Dou / Banner背景色·按钮色）</p>
           </div>
           <div class="form-group">
             <label for="xiaobaoSplashUpload">开屏图片</label>
@@ -2476,12 +2454,93 @@
   bindGradientInput('badgeColor', 'badgeColorPick', 'badgeColor');
 
   var XIAOBAO_COLOR_PRESETS = [
-    { id: 'blue', bgColor: '#cff3ff', douColor: '#C2E4FF', accentColor: '#47abdf' },
-    { id: 'green', bgColor: '#f2ffb0', douColor: '#B9F68B', accentColor: '#7edb10' },
-    { id: 'purple', bgColor: '#ede8ff', douColor: '#F0D4FF', accentColor: '#a17ae4' },
-    { id: 'pink', bgColor: '#ffebe6', douColor: '#FFD3ED', accentColor: '#f37b9f' },
-    { id: 'yellow', bgColor: '#FFF5DA', douColor: '#FFECB9', accentColor: '#F4A103' },
+    { id: 'blue', label: '蓝色', bgColor: '#cff3ff', douColor: '#C2E4FF', accentColor: '#47abdf' },
+    { id: 'green', label: '绿色', bgColor: '#f2ffb0', douColor: '#B9F68B', accentColor: '#7edb10' },
+    { id: 'purple', label: '紫色', bgColor: '#ede8ff', douColor: '#F0D4FF', accentColor: '#a17ae4' },
+    { id: 'pink', label: '粉色', bgColor: '#ffebe6', douColor: '#FFD3ED', accentColor: '#f37b9f' },
+    { id: 'yellow', label: '黄色', bgColor: '#FFF5DA', douColor: '#FFECB9', accentColor: '#F4A103' },
   ];
+
+  function formatHexColor(value) {
+    var hex = String(value || '').trim();
+    if (!hex) return '';
+    return hex.charAt(0) === '#' ? hex : '#' + hex;
+  }
+
+  function copyHexColor(value) {
+    var hex = formatHexColor(value);
+    if (!hex) return Promise.reject(new Error('empty'));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(hex);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = hex;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function renderXiaobaoColorPresets() {
+    var container = document.getElementById('xiaobaoColorPresets');
+    if (!container) return;
+    container.innerHTML = '';
+    XIAOBAO_COLOR_PRESETS.forEach(function (preset) {
+      var card = document.createElement('div');
+      card.className = 'xiaobao-color-preset';
+      card.dataset.preset = preset.id;
+      card.setAttribute('role', 'button');
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', preset.label + '配色');
+
+      var swatches = document.createElement('div');
+      swatches.className = 'xiaobao-color-preset-swatches';
+      [preset.bgColor, preset.douColor, preset.accentColor].forEach(function (color) {
+        var hex = formatHexColor(color);
+        var swatch = document.createElement('div');
+        swatch.className = 'xiaobao-color-swatch';
+        swatch.dataset.color = hex;
+        swatch.title = '右键复制色号';
+        var fill = document.createElement('span');
+        fill.className = 'xiaobao-color-swatch-fill';
+        fill.style.background = hex;
+        swatch.appendChild(fill);
+        var badge = document.createElement('span');
+        badge.className = 'xiaobao-color-swatch-badge';
+        badge.textContent = '已复制';
+        badge.setAttribute('aria-hidden', 'true');
+        swatch.appendChild(badge);
+        swatches.appendChild(swatch);
+      });
+      card.appendChild(swatches);
+
+      var label = document.createElement('span');
+      label.className = 'xiaobao-color-preset-label';
+      label.textContent = preset.label;
+      card.appendChild(label);
+      container.appendChild(card);
+    });
+  }
+
+  function flashCopiedSwatch(swatch) {
+    if (!swatch) return;
+    if (swatch._copyBadgeTimer) clearTimeout(swatch._copyBadgeTimer);
+    swatch.classList.add('copied');
+    swatch._copyBadgeTimer = setTimeout(function () {
+      swatch.classList.remove('copied');
+      swatch._copyBadgeTimer = null;
+    }, 1500);
+  }
 
   function normalizeHexColor(value) {
     return String(value || '').trim().toLowerCase().replace(/^#/, '');
@@ -2524,17 +2583,28 @@
 
   function syncXiaobaoColorPresetUi() {
     var activeId = inferXiaobaoColorPreset(xiaobaoState);
-    document.querySelectorAll('.xiaobao-color-preset').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.preset === activeId);
+    document.querySelectorAll('.xiaobao-color-preset').forEach(function (card) {
+      card.classList.toggle('active', card.dataset.preset === activeId);
     });
   }
 
+  renderXiaobaoColorPresets();
+
   document.getElementById('xiaobaoColorPresets').addEventListener('click', function (e) {
-    var btn = e.target.closest('.xiaobao-color-preset');
-    if (!btn || !btn.dataset.preset) return;
-    if (btn.dataset.preset === inferXiaobaoColorPreset(xiaobaoState)) return;
+    var card = e.target.closest('.xiaobao-color-preset');
+    if (!card || !card.dataset.preset) return;
+    if (card.dataset.preset === inferXiaobaoColorPreset(xiaobaoState)) return;
     pushUndoSnapshot();
-    applyXiaobaoColorPreset(btn.dataset.preset);
+    applyXiaobaoColorPreset(card.dataset.preset);
+  });
+
+  document.getElementById('xiaobaoColorPresets').addEventListener('contextmenu', function (e) {
+    var swatch = e.target.closest('.xiaobao-color-swatch');
+    if (!swatch || !swatch.dataset.color) return;
+    e.preventDefault();
+    copyHexColor(swatch.dataset.color)
+      .then(function () { flashCopiedSwatch(swatch); })
+      .catch(function () { alert('复制失败，请手动复制：' + swatch.dataset.color); });
   });
 
   bindUndoInput(document.getElementById('xiaobaoTitle'), function (e) {

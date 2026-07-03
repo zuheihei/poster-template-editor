@@ -228,8 +228,8 @@
       volBar: {
         left: 421, top: 229, width: 239, height: 48,
         logo: { left: 0, top: 0, width: 134, height: 45 },
-        vol: { left: 140, top: -12, width: 84, height: 51, volSize: 32, numSize: 40, lineHeight: 48 },
-        weekly: { left: 140, top: 34, width: 84, height: 12, fontSize: 11.5, lineHeight: 12, fontWeight: 500 },
+        vol: { left: 140, top: -11, width: 84, height: 42, volSize: 30, numSize: 42, lineHeight: 48, numLineHeight: 40 },
+        weekly: { top: 34, height: 14, fontSize: 12.5, fontUnit: 'pt', lineHeight: 12, fontWeight: 500, text: 'Douer Weekly', widthExtra: 10, widthExtraUnit: 'pt' },
       },
     },
     /** 1125×1500 开屏封面 */
@@ -325,11 +325,15 @@
     return { left: spec.title.left, top: spec.title.top };
   }
 
-  function getTitleMeasureContext(fontSize, fontWeight) {
+  function getTitleMeasureContext(fontSize, fontWeight, fontUnit) {
     if (!_titleMeasureCanvas) _titleMeasureCanvas = document.createElement('canvas');
     var ctx = _titleMeasureCanvas.getContext('2d');
-    ctx.font = (fontWeight || 700) + ' ' + fontSize + 'px ' + FONT_SANS;
+    ctx.font = (fontWeight || 700) + ' ' + fontSize + (fontUnit || 'px') + ' ' + FONT_SANS;
     return ctx;
+  }
+
+  function measureSansTextWidth(text, fontSize, fontWeight, fontUnit) {
+    return getTitleMeasureContext(fontSize, fontWeight, fontUnit).measureText(String(text || '')).width;
   }
 
   function countRenderedTitleLines(text, titleSpec) {
@@ -916,11 +920,41 @@
     if (!spec.volBar) return null;
     var v = spec.volBar;
     var logo = v.logo || { left: 0, top: 0, width: 134, height: 45 };
-    var vol = v.vol || { left: 140, top: -12, width: 84, height: 51, volSize: 32, numSize: 40, lineHeight: 48 };
-    var weekly = v.weekly || { left: 140, top: 34, width: 84, height: 12, fontSize: 11.5, lineHeight: 12, fontWeight: 500 };
-    var volSize = vol.volSize != null ? vol.volSize : 32;
-    var numSize = vol.numSize != null ? vol.numSize : 40;
+    var vol = v.vol || { left: 140, top: -11, width: 84, height: 42, volSize: 30, numSize: 42, lineHeight: 48, numLineHeight: 40 };
+    var weekly = v.weekly || { top: 34, height: 14, fontSize: 12.5, fontUnit: 'pt', lineHeight: 12, fontWeight: 500, text: 'Douer Weekly' };
+    var volSize = vol.volSize != null ? vol.volSize : 30;
+    var numSize = vol.numSize != null ? vol.numSize : 42;
     var volLh = vol.lineHeight != null ? vol.lineHeight : 48;
+    var numLh = vol.numLineHeight != null ? vol.numLineHeight : 40;
+    var weeklyLeft = weekly.left != null ? weekly.left : vol.left;
+    var weeklyExtra = weekly.widthExtra != null ? weekly.widthExtra : 0;
+    var weeklyExtraPx = (weekly.widthExtraUnit || 'px') === 'pt' ? weeklyExtra * 96 / 72 : weeklyExtra;
+    var weeklyWidth = weekly.width != null ? weekly.width : vol.width + weeklyExtraPx;
+    var weeklyText = weekly.text != null ? weekly.text : FIXED_DATE_SUBTITLE;
+    var weeklyFontSize = weekly.fontSize != null ? weekly.fontSize : 12.5;
+    var weeklyFontUnit = weekly.fontUnit || 'pt';
+    var weeklyFontWeight = weekly.fontWeight != null ? weekly.fontWeight : 500;
+    var weeklyNaturalWidth = measureSansTextWidth(weeklyText, weeklyFontSize, weeklyFontWeight, weeklyFontUnit);
+    var weeklyScaleX = weeklyNaturalWidth > 0 ? weeklyWidth / weeklyNaturalWidth : 1;
+    var weeklyStyles = {
+      position: 'absolute',
+      left: weeklyLeft + 'px',
+      top: weekly.top + 'px',
+      height: weekly.height + 'px',
+      fontFamily: FONT_SANS,
+      fontWeight: String(weeklyFontWeight),
+      fontSize: weeklyFontSize + weeklyFontUnit,
+      lineHeight: weekly.lineHeight + 'px',
+      color: '#000000',
+      whiteSpace: 'nowrap',
+      boxSizing: 'border-box',
+    };
+    if (weekly.stretch !== false && weeklyWidth > 0 && weeklyScaleX !== 1) {
+      weeklyStyles.transform = 'scaleX(' + weeklyScaleX + ')';
+      weeklyStyles.transformOrigin = 'left top';
+    } else {
+      weeklyStyles.width = weeklyWidth + 'px';
+    }
     var wrap = el('div', 'xiaobao-vol-bar', {
       position: 'absolute',
       left: v.left + 'px',
@@ -949,21 +983,8 @@
       lineHeight: volLh + 'px',
       color: '#000000',
       whiteSpace: 'nowrap',
-    }, '<span style="font-size:' + volSize + 'px;line-height:' + volLh + 'px">Vol.</span><span style="font-size:' + numSize + 'px;line-height:' + volLh + 'px">' + escHtml(data.issueNumber || '18') + '</span>'));
-    wrap.appendChild(el('div', 'xiaobao-vol-bar-weekly', {
-      position: 'absolute',
-      left: weekly.left + 'px',
-      top: weekly.top + 'px',
-      width: weekly.width + 'px',
-      height: weekly.height + 'px',
-      fontFamily: FONT_SANS,
-      fontWeight: String(weekly.fontWeight || 500),
-      fontSize: weekly.fontSize + 'pt',
-      lineHeight: weekly.lineHeight + 'px',
-      color: '#000000',
-      whiteSpace: 'nowrap',
-      boxSizing: 'border-box',
-    }, FIXED_DATE_SUBTITLE));
+    }, '<span style="font-size:' + volSize + 'px;line-height:' + volLh + 'px">Vol.</span><span style="font-size:' + numSize + 'px;line-height:' + numLh + 'px">' + escHtml(data.issueNumber || '20') + '</span>'));
+    wrap.appendChild(el('div', 'xiaobao-vol-bar-weekly', weeklyStyles, weeklyText));
     return wrap;
   }
 
