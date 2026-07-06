@@ -33,7 +33,7 @@
     p: {
       frame: { width: 1125, height: 811 },
       transparentBg: true,
-      dou: { left: -183, top: -61, width: 1492, height: 896, opacity: 1 },
+      dou: { left: -98, top: -38, width: 1386, height: 832, opacity: 0.3 },
       titleLogo: { left: 45, top: 341, width: 683, height: 281, src: ASSETS.headTitleLogo, zIndex: 2 },
       badgeLogo: { left: 51, top: 251, width: 137, height: 59, src: ASSETS.headDoubanLogo, zIndex: 3 },
       issue: {
