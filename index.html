@@ -654,6 +654,7 @@
   var BATCH_EXPORT_PIXEL_RATIO = 1;
   var JPG_EXPORT_QUALITY = 0.88;
   var MAX_JPEG_BYTES = 200 * 1024;
+  var MAX_EXACT_JPEG_BYTES = 400 * 1024;
   var MAX_PNG_BYTES = 300 * 1024;
   var MAX_GIF_BYTES = 300 * 1024;
   var JPEG_BG = '#F7F7F7';
@@ -1901,7 +1902,10 @@
     });
   }
 
-  function fitJpegUnderLimit(pngDataUrl, maxBytes, backgroundColor) {
+  function fitJpegUnderLimit(pngDataUrl, maxBytes, backgroundColor, allowScale) {
+    if (allowScale === false) {
+      return binarySearchJpegQuality(pngDataUrl, maxBytes, 0.28, JPG_EXPORT_QUALITY, backgroundColor);
+    }
     function attemptScale(scaleIndex) {
       var scale = JPEG_SCALES[scaleIndex];
       var prep = scale === 1
@@ -1970,9 +1974,9 @@
     return 'data:image/gif;base64,' + btoa(bin);
   }
 
-  function fitGifUnderLimit(canvas, maxBytes, gifenc) {
+  function fitGifUnderLimit(canvas, maxBytes, gifenc, allowScale) {
     function attempt(scaleIndex, paletteIndex) {
-      var scale = GIF_SCALES[scaleIndex];
+      var scale = allowScale === false ? 1 : GIF_SCALES[scaleIndex];
       var paletteSize = GIF_PALETTE_SIZES[paletteIndex];
       var target = scale === 1 ? canvas : scaleCanvas(canvas, scale);
       var gifUrl = canvasToGifWithPalette(target, paletteSize, gifenc);
@@ -1982,10 +1986,10 @@
       if (paletteIndex + 1 < GIF_PALETTE_SIZES.length) {
         return attempt(scaleIndex, paletteIndex + 1);
       }
-      if (scaleIndex + 1 < GIF_SCALES.length) {
+      if (allowScale !== false && scaleIndex + 1 < GIF_SCALES.length) {
         return attempt(scaleIndex + 1, 0);
       }
-      return { dataUrl: gifUrl, format: 'gif', note: 'GIF 已尽力压缩，仍可能超过 300KB' };
+      return { dataUrl: gifUrl, format: 'gif', note: 'GIF 已尽力压缩，仍可能超过限制' };
     }
     return attempt(0, 0);
   }
@@ -2097,7 +2101,7 @@
     return JPEG_BG;
   }
 
-  function capturePosterDataUrl(node, width, height, format, pixelRatio) {
+  function capturePosterDataUrl(node, width, height, format, pixelRatio, exactExport) {
     assertExportReady();
     var opts = getCaptureOptions(width, height, pixelRatio);
     var captureBg = getCaptureBackgroundColor(node);
@@ -2108,13 +2112,30 @@
     if (format === 'gif') {
       return htmlToImage.toCanvas(node, opts).then(function (canvas) {
         return import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm').then(function (gifenc) {
-          return fitGifUnderLimit(canvas, MAX_GIF_BYTES, gifenc);
+          return fitGifUnderLimit(
+            canvas,
+            exactExport ? MAX_EXACT_JPEG_BYTES : MAX_GIF_BYTES,
+            gifenc,
+            exactExport ? false : undefined
+          );
         });
       });
     }
     if (format === 'jpg' && htmlToImage.toJpeg) {
       var jpegBg = isTransparentHead ? JPEG_BG : captureBg;
       var jpegOpts = Object.assign({}, opts, { quality: JPG_EXPORT_QUALITY, backgroundColor: jpegBg });
+      if (exactExport) {
+        return htmlToImage.toJpeg(node, jpegOpts).then(function (jpgUrl) {
+          if (getDataUrlByteSize(jpgUrl) <= MAX_EXACT_JPEG_BYTES) {
+            return { dataUrl: jpgUrl, format: 'jpg' };
+          }
+          return htmlToImage.toPng(node, opts).then(function (pngUrl) {
+            return fitJpegUnderLimit(pngUrl, MAX_EXACT_JPEG_BYTES, jpegBg, false).then(function (jpg) {
+              return { dataUrl: jpg, format: 'jpg' };
+            });
+          });
+        });
+      }
       return htmlToImage.toJpeg(node, jpegOpts).then(function (jpgUrl) {
         if (getDataUrlByteSize(jpgUrl) <= MAX_JPEG_BYTES) {
           return { dataUrl: jpgUrl, format: 'jpg' };
@@ -2124,6 +2145,11 @@
             return { dataUrl: jpg, format: 'jpg' };
           });
         });
+      });
+    }
+    if (exactExport) {
+      return htmlToImage.toPng(node, opts).then(function (pngUrl) {
+        return { dataUrl: pngUrl, format: 'png' };
       });
     }
     return htmlToImage.toPng(node, opts).then(function (pngUrl) {
@@ -2136,9 +2162,9 @@
     });
   }
 
-  function prepareAndExport(node, width, height, format) {
+  function prepareAndExport(node, width, height, format, pixelRatio, exactExport) {
     return prepareExportBatch([node]).then(function () {
-      return capturePosterDataUrl(node, width, height, format);
+      return capturePosterDataUrl(node, width, height, format, pixelRatio, exactExport);
     });
   }
 
@@ -2187,7 +2213,8 @@
     }
     exporting = true;
     setExportDisabled(true);
-    prepareAndExport(node, cfg.width, cfg.height, exportFormat)
+    var exportRatio = cfg.exportPixelRatio != null ? cfg.exportPixelRatio : undefined;
+    prepareAndExport(node, cfg.width, cfg.height, exportFormat, exportRatio, cfg.exactExport)
       .then(function (result) { downloadExportResult(result, cfg.exportName, exportFormat); })
       .catch(function (e) { alert(e.message || '导出失败，请稍后重试'); console.error(e); })
       .finally(function () { resetExportState(); });
@@ -2250,7 +2277,8 @@
         var node = exportNodes[key];
         var cfg = POSTER_SIZES[key] || TopicPoster.TOPIC_SIZES[key] || XiaobaoPoster.XIAOBAO_SIZES[key];
         var format = key === 'p' ? 'png' : exportFormat;
-        return capturePosterDataUrl(node, cfg.width, cfg.height, format, BATCH_EXPORT_PIXEL_RATIO).then(function (result) {
+        var batchRatio = cfg.exportPixelRatio != null ? cfg.exportPixelRatio : BATCH_EXPORT_PIXEL_RATIO;
+        return capturePosterDataUrl(node, cfg.width, cfg.height, format, batchRatio, cfg.exactExport).then(function (result) {
           completed += 1;
           setBatchExportProgress(progressBtnId, completed, total);
           return { cfg: cfg, result: result };

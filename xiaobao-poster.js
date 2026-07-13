@@ -181,10 +181,11 @@
         paddingTop: 1, paddingRight: 100, paddingBottom: 1, paddingLeft: 100,
       },
       credit: {
-        left: 600, top: 11, width: 75, height: 30, fontSize: 18, lineHeight: 30,
+        inSplash: true,
+        top: 11, right: 3, rightUnit: 'pt', height: 30, fontSize: 18, lineHeight: 30,
         fontWeight: 400, fontFamily: FONT_SANS,
         shadow: '0 0 2.6px rgba(0,0,0,0.4)',
-        iconLeft: 651, iconTop: 18, iconW: 24, iconH: 8, align: 'right',
+        iconW: 24, iconH: 8, iconGap: 0, iconTop: 18, align: 'right',
       },
     },
     /** 1280×720 */
@@ -207,10 +208,10 @@
       },
       doumao: { left: 1049, top: 489, width: 249, height: 303 },
       credit: {
-        left: 1155, top: 25, width: 84, height: 30, fontSize: 24, lineHeight: 30,
+        top: 25, right: 10, rightUnit: 'pt', height: 30, fontSize: 24, lineHeight: 30,
         fontWeight: 400, fontFamily: FONT_SANS,
         shadow: '0 0 2.6px rgba(0,0,0,0.4)',
-        iconLeft: 1227, iconTop: 30, iconW: 24, iconH: 8, align: 'right',
+        iconW: 24, iconH: 8, iconGap: 6, align: 'right',
       },
     },
     /** 1080×317 横版 banner */
@@ -286,9 +287,9 @@
   };
 
   var XIAOBAO_SIZES = {
-    e: { width: 1242, height: 2688, exportName: 'xiaobao-1242x2688', label: '1242×2688', scale: 0.38 },
-    f: { width: 1242, height: 2588, exportName: 'xiaobao-1242x2588', label: '1242×2588', scale: 0.38 },
-    n: { width: 1242, height: 2208, exportName: 'xiaobao-1242x2208', label: '1242×2208', scale: 0.38 },
+    e: { width: 1242, height: 2688, exportName: 'xiaobao-1242x2688', label: '1242×2688', scale: 0.38, exportPixelRatio: 1, exactExport: true },
+    f: { width: 1242, height: 2588, exportName: 'xiaobao-1242x2588', label: '1242×2588', scale: 0.38, exportPixelRatio: 1, exactExport: true },
+    n: { width: 1242, height: 2208, exportName: 'xiaobao-1242x2208', label: '1242×2208', scale: 0.38, exportPixelRatio: 1, exactExport: true },
     g: { width: 690, height: 390, exportName: 'xiaobao-690x390', label: '690×390', scale: 0.42 },
     h: { width: 1280, height: 720, exportName: 'xiaobao-1280x720', label: '1280×720', scale: 0.38 },
     i: { width: 1080, height: 317, exportName: 'xiaobao-1080x317', label: '1080×317', scale: 0.38 },
@@ -503,6 +504,10 @@
     img.src = data.splashImage || ASSETS.defaultSplash;
     applySplashTransform(img, data, key, w, h, splash);
     wrap.appendChild(img);
+    if (spec.credit && spec.credit.inSplash) {
+      var splashCredit = buildCredit(spec, data);
+      if (splashCredit) wrap.appendChild(splashCredit);
+    }
     return wrap;
   }
 
@@ -814,6 +819,49 @@
       styles.top = c.top + 'px';
       styles.textAlign = 'center';
       if (!c.shadow) styles.textShadow = '0 4px 8.3px rgba(0,0,0,0.25)';
+    } else if (c.right != null) {
+      var marginVal = c.right + (c.rightUnit || 'pt');
+      var iconW = c.iconW || 0;
+      var iconH = c.iconH || 0;
+      var gap = c.iconGap != null ? c.iconGap : 0;
+      var anchored = el('div', 'xiaobao-credit', {
+        position: 'absolute',
+        top: c.top + 'px',
+        right: marginVal,
+        left: c.inSplash ? '0' : 'auto',
+        height: (c.height || 30) + 'px',
+        zIndex: '5',
+        pointerEvents: 'none',
+        boxSizing: 'border-box',
+      });
+      var textStyles = {
+        position: 'absolute',
+        top: '0',
+        right: (iconW + gap) + 'px',
+        left: c.inSplash ? '0' : 'auto',
+        fontSize: c.fontSize + 'px',
+        color: '#fff',
+        whiteSpace: 'nowrap',
+        lineHeight: (c.lineHeight || 30) + 'px',
+        fontWeight: String(c.fontWeight != null ? c.fontWeight : 400),
+        textAlign: 'right',
+        boxSizing: 'border-box',
+      };
+      if (c.fontFamily) textStyles.fontFamily = c.fontFamily;
+      if (c.shadow) textStyles.textShadow = c.shadow;
+      else textStyles.textShadow = '0 0 14.4px rgba(0,0,0,0.6)';
+      if (c.letterSpacing != null) textStyles.letterSpacing = c.letterSpacing + 'px';
+      anchored.appendChild(el('span', 'xiaobao-credit-text', textStyles, creditText));
+      if (iconW) {
+        anchored.appendChild(buildImgAsset(ASSETS.creditIcon, 'xiaobao-credit-icon', {
+          position: 'absolute',
+          right: '0',
+          top: (c.iconTop != null ? (c.iconTop - c.top) : 7) + 'px',
+          width: iconW + 'px',
+          height: iconH + 'px',
+        }));
+      }
+      return anchored;
     } else {
       styles.left = c.left + 'px';
       styles.top = c.top + 'px';
@@ -1262,7 +1310,7 @@
       buildButton(spec, accent),
       buildVolBar(spec, data),
       buildDoumao(spec),
-      buildCredit(spec, data),
+      (!spec.credit || !spec.credit.inSplash) ? buildCredit(spec, data) : null,
     ].forEach(function (node) {
       if (node) card.appendChild(node);
     });
