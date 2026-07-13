@@ -255,12 +255,11 @@
         },
       },
       credit: {
-        left: 377, top: 1402, width: 371, height: 55,
+        top: 1402, height: 55, centerFrame: true,
         fontSize: 39, lineHeight: 54.52, letterSpacing: 0,
         fontWeight: 400, fontFamily: FONT_SANS,
         shadow: '0 4px 8.3px rgba(0,0,0,0.25)',
-        iconLeft: 726, iconTop: 1414, iconW: 30, iconH: 10,
-        align: 'center',
+        iconW: 30, iconH: 10, iconGap: 6, align: 'center',
       },
     },
     /** 690×228 首页 banner */
@@ -811,6 +810,44 @@
     if (c.shadow) styles.textShadow = c.shadow;
     if (c.letterSpacing != null) styles.letterSpacing = c.letterSpacing + 'px';
     if (c.align === 'center') {
+      if (c.centerFrame) {
+        var frameCenter = el('div', 'xiaobao-credit', {
+          position: 'absolute',
+          left: '0',
+          right: '0',
+          top: c.top + 'px',
+          height: (c.height || 55) + 'px',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: (c.iconGap != null ? c.iconGap : 6) + 'px',
+          zIndex: '5',
+          pointerEvents: 'none',
+          boxSizing: 'border-box',
+        });
+        var centerTextStyles = {
+          fontSize: c.fontSize + 'px',
+          color: '#fff',
+          whiteSpace: 'nowrap',
+          lineHeight: (c.lineHeight || 30) + 'px',
+          fontWeight: String(c.fontWeight != null ? c.fontWeight : 400),
+          boxSizing: 'border-box',
+        };
+        if (c.fontFamily) centerTextStyles.fontFamily = c.fontFamily;
+        if (c.shadow) centerTextStyles.textShadow = c.shadow;
+        else centerTextStyles.textShadow = '0 4px 8.3px rgba(0,0,0,0.25)';
+        if (c.letterSpacing != null) centerTextStyles.letterSpacing = c.letterSpacing + 'px';
+        frameCenter.appendChild(el('span', 'xiaobao-credit-text', centerTextStyles, creditText));
+        if (c.iconW) {
+          frameCenter.appendChild(buildImgAsset(ASSETS.creditIcon, 'xiaobao-credit-icon', {
+            width: c.iconW + 'px',
+            height: c.iconH + 'px',
+            flexShrink: '0',
+          }));
+        }
+        return frameCenter;
+      }
       if (c.left != null) styles.left = c.left + 'px';
       else {
         styles.left = '50%';
